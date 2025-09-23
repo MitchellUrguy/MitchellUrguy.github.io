@@ -1,112 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Quadratic Calculator</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f4f4f4;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 50px;
-    }
-
-    h1 {
-      color: #333;
-    }
-
-    .calculator {
-      background: white;
-      padding: 20px 30px;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-      width: 300px;
-    }
-
-    .calculator label {
-      display: block;
-      margin: 10px 0 5px;
-    }
-
-    .calculator input {
-      width: 100%;
-      padding: 8px;
-      margin-bottom: 10px;
-    }
-
-    .calculator button {
-      width: 100%;
-      padding: 10px;
-      background: #007BFF;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      font-size: 16px;
-      cursor: pointer;
-    }
-
-    .calculator button:hover {
-      background: #0056b3;
-    }
-
-    .result {
-      margin-top: 20px;
-      font-weight: bold;
-      color: #333;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
 </head>
 <body>
-
-  <h1>Quadratic Calculator</h1>
-  <div class="calculator">
-    <label for="a">a:</label>
-    <input type="number" id="a" placeholder="Enter a" required>
-
-    <label for="b">b:</label>
-    <input type="number" id="b" placeholder="Enter b" required>
-
-    <label for="c">c:</label>
-    <input type="number" id="c" placeholder="Enter c" required>
-
-    <button onclick="solveQuadratic()">Solve</button>
-
-    <div class="result" id="result"></div>
-  </div>
-
-  <script>
-    function solveQuadratic() {
-      const a = parseFloat(document.getElementById('a').value);
-      const b = parseFloat(document.getElementById('b').value);
-      const c = parseFloat(document.getElementById('c').value);
-      const result = document.getElementById('result');
-
-      if (isNaN(a) || isNaN(b) || isNaN(c)) {
-        result.textContent = "Please enter valid numbers for a, b, and c.";
-        return;
-      }
-
-      if (a === 0) {
-        result.textContent = "This is not a quadratic equation (a ≠ 0).";
-        return;
-      }
-
-      const discriminant = b * b - 4 * a * c;
-
-      if (discriminant > 0) {
-        const x1 = (-b + Math.sqrt(discriminant)) / (2 * a);
-        const x2 = (-b - Math.sqrt(discriminant)) / (2 * a);
-        result.textContent = `Two real roots: x₁ = ${x1.toFixed(2)}, x₂ = ${x2.toFixed(2)}`;
-      } else if (discriminant === 0) {
-        const x = -b / (2 * a);
-        result.textContent = `One real root: x = ${x.toFixed(2)}`;
-      } else {
-        result.textContent = "No real roots (discriminant < 0).";
-      }
-    }
-  </script>
-
+    
 </body>
 </html>
