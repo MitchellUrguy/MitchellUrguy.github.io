@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fog of war</title>
+    <title>For of War</title>
     <style>
         * {
             margin: 0;
@@ -195,7 +195,7 @@
                     Computer Science
                 </button>
                 <button class="nav-button" onclick="alert('Add your other school projects here!')">
-                    More
+                    Other School Projects
                 </button>
             </div>
         </div>
@@ -212,11 +212,11 @@
                     <div class="week-header" onclick="toggleWeek('week1')">Week 1</div>
                     <div class="week-content" id="week1">
                         <div class="day-grid">
-                            <a href="#" class="day-button" onclick="editLink(this)">Day 1</a>
-                            <a href="#" class="day-button" onclick="editLink(this)">Day 2</a>
-                            <a href="#" class="day-button" onclick="editLink(this)">Day 3</a>
-                            <a href="#" class="day-button" onclick="editLink(this)">Day 4</a>
-                            <a href="#" class="day-button" onclick="editLink(this)">Day 5</a>
+                            <button class="day-button" onclick="openFile('week1-day1')">Day 1</button>
+                            <button class="day-button" onclick="openFile('week1-day2')">Day 2</button>
+                            <button class="day-button" onclick="openFile('week1-day3')">Day 3</button>
+                            <button class="day-button" onclick="openFile('week1-day4')">Day 4</button>
+                            <button class="day-button" onclick="openFile('week1-day5')">Day 5</button>
                         </div>
                     </div>
                 </div>
@@ -226,11 +226,11 @@
                     <div class="week-header" onclick="toggleWeek('week2')">Week 2</div>
                     <div class="week-content" id="week2">
                         <div class="day-grid">
-                            <a href="#" class="day-button" onclick="editLink(this)">Day 1</a>
-                            <a href="#" class="day-button" onclick="editLink(this)">Day 2</a>
-                            <a href="#" class="day-button" onclick="editLink(this)">Day 3</a>
-                            <a href="#" class="day-button" onclick="editLink(this)">Day 4</a>
-                            <a href="#" class="day-button" onclick="editLink(this)">Day 5</a>
+                            <button class="day-button" onclick="openFile('week2-day1')">Day 1</button>
+                            <button class="day-button" onclick="openFile('week2-day2')">Day 2</button>
+                            <button class="day-button" onclick="openFile('week2-day3')">Day 3</button>
+                            <button class="day-button" onclick="openFile('week2-day4')">Day 4</button>
+                            <button class="day-button" onclick="openFile('week2-day5')">Day 5</button>
                         </div>
                     </div>
                 </div>
@@ -240,11 +240,11 @@
                     <div class="week-header" onclick="toggleWeek('week3')">Week 3</div>
                     <div class="week-content" id="week3">
                         <div class="day-grid">
-                            <a href="#" class="day-button" onclick="editLink(this)">Day 1</a>
-                            <a href="#" class="day-button" onclick="editLink(this)">Day 2</a>
-                            <a href="#" class="day-button" onclick="editLink(this)">Day 3</a>
-                            <a href="#" class="day-button" onclick="editLink(this)">Day 4</a>
-                            <a href="#" class="day-button" onclick="editLink(this)">Day 5</a>
+                            <button class="day-button" onclick="openFile('week3-day1')">Day 1</button>
+                            <button class="day-button" onclick="openFile('week3-day2')">Day 2</button>
+                            <button class="day-button" onclick="openFile('week3-day3')">Day 3</button>
+                            <button class="day-button" onclick="openFile('week3-day4')">Day 4</button>
+                            <button class="day-button" onclick="openFile('week3-day5')">Day 5</button>
                         </div>
                     </div>
                 </div>
@@ -254,11 +254,11 @@
                     <div class="week-header" onclick="toggleWeek('week4')">Week 4</div>
                     <div class="week-content" id="week4">
                         <div class="day-grid">
-                            <a href="#" class="day-button" onclick="editLink(this)">Day 1</a>
-                            <a href="#" class="day-button" onclick="editLink(this)">Day 2</a>
-                            <a href="#" class="day-button" onclick="editLink(this)">Day 3</a>
-                            <a href="#" class="day-button" onclick="editLink(this)">Day 4</a>
-                            <a href="#" class="day-button" onclick="editLink(this)">Day 5</a>
+                            <button class="day-button" onclick="openFile('week4-day1')">Day 1</button>
+                            <button class="day-button" onclick="openFile('week4-day2')">Day 2</button>
+                            <button class="day-button" onclick="openFile('week4-day3')">Day 3</button>
+                            <button class="day-button" onclick="openFile('week4-day4')">Day 4</button>
+                            <button class="day-button" onclick="openFile('week4-day5')">Day 5</button>
                         </div>
                     </div>
                 </div>
@@ -268,11 +268,11 @@
                     <div class="week-header" onclick="toggleWeek('week5')">Week 5</div>
                     <div class="week-content" id="week5">
                         <div class="day-grid">
-                            <a href="#" class="day-button" onclick="editLink(this)">Day 1</a>
-                            <a href="#" class="day-button" onclick="editLink(this)">Day 2</a>
-                            <a href="#" class="day-button" onclick="editLink(this)">Day 3</a>
-                            <a href="#" class="day-button" onclick="editLink(this)">Day 4</a>
-                            <a href="#" class="day-button" onclick="editLink(this)">Day 5</a>
+                            <button class="day-button" onclick="openFile('week5-day1')">Day 1</button>
+                            <button class="day-button" onclick="openFile('week5-day2')">Day 2</button>
+                            <button class="day-button" onclick="openFile('week5-day3')">Day 3</button>
+                            <button class="day-button" onclick="openFile('week5-day4')">Day 4</button>
+                            <button class="day-button" onclick="openFile('week5-day5')">Day 5</button>
                         </div>
                     </div>
                 </div>
@@ -306,13 +306,45 @@
             }
         }
 
-        function editLink(button) {
-            event.preventDefault(); // Prevent the link from navigating
+        // File paths for each day - you can edit these directly
+        const filePaths = {
+            'week1-day1': 'files/week1/day1.html',
+            'week1-day2': 'files/week1/day2.html',
+            'week1-day3': 'files/week1/day3.html',
+            'week1-day4': 'files/week1/day4.html',
+            'week1-day5': 'files/week1/day5.html',
             
-            const newUrl = prompt('Enter the URL for ' + button.textContent + ':');
-            if (newUrl && newUrl.trim() !== '') {
-                button.href = newUrl;
-                alert('Link saved! ' + button.textContent + ' will now go to: ' + newUrl);
+            'week2-day1': 'files/week2/day1.html',
+            'week2-day2': 'files/week2/day2.html',
+            'week2-day3': 'files/week2/day3.html',
+            'week2-day4': 'files/week2/day4.html',
+            'week2-day5': 'files/week2/day5.html',
+            
+            'week3-day1': 'files/week3/day1.html',
+            'week3-day2': 'files/week3/day2.html',
+            'week3-day3': 'files/week3/day3.html',
+            'week3-day4': 'files/week3/day4.html',
+            'week3-day5': 'files/week3/day5.html',
+            
+            'week4-day1': 'files/week4/day1.html',
+            'week4-day2': 'files/week4/day2.html',
+            'week4-day3': 'files/week4/day3.html',
+            'week4-day4': 'files/week4/day4.html',
+            'week4-day5': 'files/week4/day5.html',
+            
+            'week5-day1': 'files/week5/day1.html',
+            'week5-day2': 'files/week5/day2.html',
+            'week5-day3': 'files/week5/day3.html',
+            'week5-day4': 'files/week5/day4.html',
+            'week5-day5': 'files/week5/day5.html'
+        };
+
+        function openFile(dayId) {
+            const filePath = filePaths[dayId];
+            if (filePath) {
+                window.open(filePath, '_blank');
+            } else {
+                alert('No file specified for this day yet.');
             }
         }
     </script>
