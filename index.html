@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Main</title>
+<style>
+  body, html {
+    height: 100%;
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #eef2f7;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .container {
+    display: flex;
+    flex-direction: column;
+    gap:2px;
+  }
+  .dropdown {
+    position: relative;
+    display: inline-block;
+    font-size: 22px;
+  }
+  .dropdown > button {
+    background-color: #0056b3;
+    color: white;
+  
+    padding: 18px 28px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background-color 0.3s ease;
+    min-width: 800px;
+    min-height: 100px;
+  }
+  .dropdown > button:hover {
+    background-color: #004494;
+  }
+  .dropdown-content {
+    display: none;
+    position: absolute;
+    top: 58px;
+    left: 0;
+    background-color: white;
+    min-width: 160px;
+    border-radius: 10px;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+    z-index: 10;
+  }
+  .dropdown-content button {
+    background-color: white;
+    color: #222;
+    border: none;
+    padding: 16px 20px;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    font-size: 18px;
+    font-weight: 500;
+    border-bottom: 1px solid #ddd;
+    border-radius: 0;
+    transition: background-color 0.2s ease;
+  }
+  .dropdown-content button:last-child {
+    border-bottom: none;
+  }
+  .dropdown-content button:hover {
+    background-color: #e0f0ff;
+    color: #0056b3;
+  }
+  /* Show dropdown on hover */
+  .dropdown:hover .dropdown-content {
+    display: block;
+  }
+  /* Responsive: stack dropdowns vertically on smaller screens */
+  @media (max-width: 700px) {
+    .container {
+      flex-direction: column;
+      gap: 30px;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Week 1 Dropdown -->
+  <div class="dropdown">
+    <button>Week 1 ▼</button>
+    <div class="dropdown-content">
+      <button onclick="goToLink('')">Day 1</button>
+      <button onclick="goToLink('')">Day 2</button>
+      <button onclick="goToLink('')">Day 3</button>
+      <button onclick="goToLink('')">Day 4</button>
+      <button onclick="goToLink('')">Day 5</button>
+    </div>
+  </div>
+<br>
+  <!-- Week 2 Dropdown -->
+  <div class="dropdown">
+    <button>Week 2 ▼</button>
+    <div class="dropdown-content">
+      <button onclick="goToLink('')">Day 1</button>
+      <button onclick="goToLink('')">Day 2</button>
+      <button onclick="goToLink('')">Day 3</button>
+      <button onclick="goToLink('')">Day 4</button>
+      <button onclick="goToLink('')">Day 5</button>
+    </div>
+  </div>
+<br>
+  <!-- Week 3 Dropdown -->
+  <div class="dropdown">
+    <button>Week 3 ▼</button>
+    <div class="dropdown-content">
+      <button onclick="goToLink('')">Day 1</button>
+      <button onclick="goToLink('')">Day 2</button>
+      <button onclick="goToLink('')">Day 3</button>
+      <button onclick="goToLink('')">Day 4</button>
+      <button onclick="goToLink('')">Day 5</button>
+    </div>
+  </div>
+<br>
+  <!-- Week 4 Dropdown -->
+  <div class="dropdown">
+    <button>Week 4 ▼</button>
+    <div class="dropdown-content">
+      <button onclick="goToLink('file:///C:/Users/chanmitc38/Desktop/Computer%20Science/WebProjects/week%204/Day%201/Buttons&Functions.html')">Day 1</button>
+      <button onclick="goToLink('file:///C:/Users/chanmitc38/Desktop/Computer%20Science/WebProjects/week%204/Day%202/SameAsDay1.html')">Day 2</button>
+      <button onclick="goToLink('')">Day 3</button>
+      <button onclick="goToLink('')">Day 4</button>
+      <button onclick="goToLink('')">Day 5</button>
+    </div>
+  </div>
+<br>
+  <!-- Week 5 Dropdown -->
+  <div class="dropdown">
+    <button>Week 5 ▼</button>
+    <div class="dropdown-content">
+      <button onclick="goToLink('')">Day 1</button>
+      <button onclick="goToLink('')">Day 2</button>
+      <button onclick="goToLink('')">Day 3</button>
+      <button onclick="goToLink('')">Day 4</button>
+      <button onclick="goToLink('')">Day 5</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  function goToLink(url) {
+    window.location.href = url;
+  }
+</script>
+
+</body>
+</html>
