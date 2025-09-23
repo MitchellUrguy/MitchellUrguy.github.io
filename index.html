@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MitchellUrguy.jk</title>
+    <title>Fog of war</title>
     <style>
         * {
             margin: 0;
@@ -12,7 +12,7 @@
         }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             line-height: 1.6;
             color: #333;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -22,409 +22,299 @@
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 0 20px;
+            padding: 20px;
         }
 
-        header {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-            position: fixed;
-            width: 100%;
-            top: 0;
-            z-index: 1000;
-        }
-
-        nav {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1rem 0;
-        }
-
-        .logo {
-            font-size: 1.5rem;
-            font-weight: 700;
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
             color: white;
         }
 
-        .nav-links {
-            display: flex;
-            list-style: none;
-            gap: 2rem;
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
         }
 
-        .nav-links a {
+        .section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            margin-bottom: 30px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .section h2 {
+            color: #4a5568;
+            font-size: 2rem;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .nav-button {
+            display: block;
+            width: 100%;
+            padding: 20px;
+            margin: 10px 0;
+            background: linear-gradient(135deg, #667eea, #764ba2);
             color: white;
             text-decoration: none;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            padding: 0.5rem 1rem;
-            border-radius: 25px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: 600;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: none;
+            cursor: pointer;
         }
 
-        .nav-links a:hover,
-        .nav-links a.active {
-            background: rgba(255, 255, 255, 0.2);
+        .nav-button:hover {
             transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
         }
 
-        main {
-            margin-top: 80px;
-            padding: 2rem 0;
-        }
-
-        .tab-content {
+        /* Computer Science Page Styles */
+        .cs-page {
             display: none;
-            animation: fadeIn 0.5s ease-in;
         }
 
-        .tab-content.active {
+        .week-dropdown {
+            margin: 20px 0;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .week-header {
+            background: #667eea;
+            color: white;
+            padding: 15px 20px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: 600;
+            transition: background 0.3s ease;
+        }
+
+        .week-header:hover {
+            background: #5a67d8;
+        }
+
+        .week-content {
+            display: none;
+            padding: 20px;
+            background: #f8fafc;
+        }
+
+        .week-content.active {
             display: block;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .hero {
-            text-align: center;
-            padding: 4rem 0;
-            color: white;
-        }
-
-        .hero h1 {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-            font-weight: 700;
-        }
-
-        .hero p {
-            font-size: 1.2rem;
-            opacity: 0.9;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-
-        .content-card {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            padding: 2rem;
-            margin: 2rem 0;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            backdrop-filter: blur(10px);
-        }
-
-        .projects-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 1.5rem;
-            margin-top: 2rem;
-        }
-
-        .project-card {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            border-radius: 15px;
-            padding: 1.5rem;
-            color: white;
-            text-decoration: none;
-            transition: all 0.3s ease;
-            cursor: pointer;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .project-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 100%);
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-
-        .project-card:hover::before {
-            opacity: 1;
-        }
-
-        .project-card:hover {
-            transform: translateY(-10px) scale(1.02);
-            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
-        }
-
-        .project-card:nth-child(2n) {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-        }
-
-        .project-card:nth-child(3n) {
-            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-        }
-
-        .project-card:nth-child(4n) {
-            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-        }
-
-        .project-card h3 {
-            font-size: 1.3rem;
-            margin-bottom: 0.5rem;
-            font-weight: 600;
-        }
-
-        .project-card p {
-            opacity: 0.9;
-            font-size: 0.9rem;
-        }
-
-        .skills-grid {
+        .day-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-top: 1rem;
+            gap: 15px;
         }
 
-        .skill-tag {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 0.7rem 1rem;
-            border-radius: 25px;
-            text-align: center;
-            font-weight: 500;
-            transition: all 0.3s ease;
-        }
-
-        .skill-tag:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
-        }
-
-        .contact-form {
-            max-width: 600px;
-            margin: 0 auto;
-        }
-
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 500;
-            color: #555;
-        }
-
-        .form-group input,
-        .form-group textarea {
-            width: 100%;
-            padding: 0.8rem;
-            border: 2px solid #e1e5e9;
-            border-radius: 10px;
-            font-size: 1rem;
-            transition: border-color 0.3s ease;
-        }
-
-        .form-group input:focus,
-        .form-group textarea:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-
-        .btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 0.8rem 2rem;
-            border: none;
-            border-radius: 25px;
-            font-size: 1rem;
-            font-weight: 500;
+        .day-button {
+            padding: 15px;
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
             cursor: pointer;
+            text-align: center;
+            font-weight: 600;
+            color: #4a5568;
             transition: all 0.3s ease;
+            text-decoration: none;
+            display: block;
         }
 
-        .btn:hover {
+        .day-button:hover {
+            border-color: #667eea;
+            background: #667eea;
+            color: white;
             transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .back-button {
+            background: #718096;
+            margin-bottom: 20px;
+            display: inline-block;
+            width: auto;
+            padding: 10px 20px;
+            font-size: 1rem;
+        }
+
+        .back-button:hover {
+            background: #4a5568;
         }
 
         @media (max-width: 768px) {
-            .nav-links {
-                gap: 1rem;
-            }
-
-            .hero h1 {
+            .header h1 {
                 font-size: 2rem;
             }
+            
+            .container {
+                padding: 15px;
+            }
+            
+            .section {
+                padding: 20px;
+            }
 
-            .projects-grid {
-                grid-template-columns: 1fr;
+            .day-grid {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
             }
         }
     </style>
 </head>
 <body>
-    <header>
-        <nav class="container">
-            <div class="logo">Your Portfolio</div>
-            <ul class="nav-links">
-                <li><a href="#" class="nav-link active" data-tab="home">Home</a></li>
-                <li><a href="#" class="nav-link" data-tab="projects">Projects</a></li>
-                <li><a href="#" class="nav-link" data-tab="skills">Skills</a></li>
-                <li><a href="#" class="nav-link" data-tab="about">About</a></li>
-                <li><a href="#" class="nav-link" data-tab="contact">Contact</a></li>
-            </ul>
-        </nav>
-    </header>
+    <div class="container">
+        <div class="header">
+            <h1>Home</h1>
+            <p></p>
+        </div>
 
-    <main class="container">
-        <!-- Home Tab -->
-        <div id="home" class="tab-content active">
-            <div class="hero">
-                <h1>Welcome to My Portfolio</h1>
-                <p>I'm a passionate developer who loves creating innovative solutions and bringing ideas to life through code.</p>
+        <!-- Main Page -->
+        <div id="main-page">
+            <!-- Personal Projects Section -->
+            <div class="section">
+                <h2>Personal Projects</h2>
+                <button class="nav-button" onclick="alert('Add your personal projects here!')">
+                    Personal Projects
+                </button>
+            </div>
+
+            <!-- School Projects Section -->
+            <div class="section">
+                <h2>School Projects</h2>
+                <button class="nav-button" onclick="showComputerScience()">
+                    Computer Science
+                </button>
+                <button class="nav-button" onclick="alert('Add your other school projects here!')">
+                    More
+                </button>
             </div>
         </div>
 
-        <!-- Projects Tab -->
-        <div id="projects" class="tab-content">
-            <div class="content-card">
-                <h2 style="text-align: center; margin-bottom: 2rem; color: #333; font-size: 2.5rem;">Personal Projects</h2>
-                <div class="projects-grid">
-                    <div class="project-card" onclick="openProject('https://github.com/yourusername/project1')">
-                        <h3>🚀 Web Application</h3>
-                        <p>A full-stack web application built with modern technologies. Features user authentication, real-time updates, and responsive design.</p>
+        <!-- Computer Science Page -->
+        <div id="cs-page" class="cs-page">
+            <button class="nav-button back-button" onclick="showMainPage()">← Back to Main</button>
+            
+            <div class="section">
+                <h2>Computer Science</h2>
+                
+                <!-- Week 1 -->
+                <div class="week-dropdown">
+                    <div class="week-header" onclick="toggleWeek('week1')">Week 1</div>
+                    <div class="week-content" id="week1">
+                        <div class="day-grid">
+                            <a href="#" class="day-button" onclick="editLink(this)">Day 1</a>
+                            <a href="#" class="day-button" onclick="editLink(this)">Day 2</a>
+                            <a href="#" class="day-button" onclick="editLink(this)">Day 3</a>
+                            <a href="#" class="day-button" onclick="editLink(this)">Day 4</a>
+                            <a href="#" class="day-button" onclick="editLink(this)">Day 5</a>
+                        </div>
                     </div>
-                    <div class="project-card" onclick="openProject('https://github.com/yourusername/project2')">
-                        <h3>📱 Mobile App</h3>
-                        <p>Cross-platform mobile application with native performance. Includes offline functionality and push notifications.</p>
+                </div>
+
+                <!-- Week 2 -->
+                <div class="week-dropdown">
+                    <div class="week-header" onclick="toggleWeek('week2')">Week 2</div>
+                    <div class="week-content" id="week2">
+                        <div class="day-grid">
+                            <a href="#" class="day-button" onclick="editLink(this)">Day 1</a>
+                            <a href="#" class="day-button" onclick="editLink(this)">Day 2</a>
+                            <a href="#" class="day-button" onclick="editLink(this)">Day 3</a>
+                            <a href="#" class="day-button" onclick="editLink(this)">Day 4</a>
+                            <a href="#" class="day-button" onclick="editLink(this)">Day 5</a>
+                        </div>
                     </div>
-                    <div class="project-card" onclick="openProject('https://github.com/yourusername/project3')">
-                        <h3>🤖 AI Project</h3>
-                        <p>Machine learning project that solves real-world problems using cutting-edge AI algorithms and data analysis.</p>
+                </div>
+
+                <!-- Week 3 -->
+                <div class="week-dropdown">
+                    <div class="week-header" onclick="toggleWeek('week3')">Week 3</div>
+                    <div class="week-content" id="week3">
+                        <div class="day-grid">
+                            <a href="#" class="day-button" onclick="editLink(this)">Day 1</a>
+                            <a href="#" class="day-button" onclick="editLink(this)">Day 2</a>
+                            <a href="#" class="day-button" onclick="editLink(this)">Day 3</a>
+                            <a href="#" class="day-button" onclick="editLink(this)">Day 4</a>
+                            <a href="#" class="day-button" onclick="editLink(this)">Day 5</a>
+                        </div>
                     </div>
-                    <div class="project-card" onclick="openProject('https://github.com/yourusername/project4')">
-                        <h3>🎮 Game Development</h3>
-                        <p>Interactive game built from scratch with custom graphics engine. Features multiplayer support and immersive gameplay.</p>
+                </div>
+
+                <!-- Week 4 -->
+                <div class="week-dropdown">
+                    <div class="week-header" onclick="toggleWeek('week4')">Week 4</div>
+                    <div class="week-content" id="week4">
+                        <div class="day-grid">
+                            <a href="#" class="day-button" onclick="editLink(this)">Day 1</a>
+                            <a href="#" class="day-button" onclick="editLink(this)">Day 2</a>
+                            <a href="#" class="day-button" onclick="editLink(this)">Day 3</a>
+                            <a href="#" class="day-button" onclick="editLink(this)">Day 4</a>
+                            <a href="#" class="day-button" onclick="editLink(this)">Day 5</a>
+                        </div>
                     </div>
-                    <div class="project-card" onclick="openProject('https://github.com/yourusername/project5')">
-                        <h3>🔧 Developer Tool</h3>
-                        <p>Productivity tool that helps developers streamline their workflow and automate repetitive tasks.</p>
-                    </div>
-                    <div class="project-card" onclick="openProject('https://github.com/yourusername/project6')">
-                        <h3>📊 Data Visualization</h3>
-                        <p>Interactive dashboard that transforms complex data into beautiful, understandable visualizations and insights.</p>
+                </div>
+
+                <!-- Week 5 -->
+                <div class="week-dropdown">
+                    <div class="week-header" onclick="toggleWeek('week5')">Week 5</div>
+                    <div class="week-content" id="week5">
+                        <div class="day-grid">
+                            <a href="#" class="day-button" onclick="editLink(this)">Day 1</a>
+                            <a href="#" class="day-button" onclick="editLink(this)">Day 2</a>
+                            <a href="#" class="day-button" onclick="editLink(this)">Day 3</a>
+                            <a href="#" class="day-button" onclick="editLink(this)">Day 4</a>
+                            <a href="#" class="day-button" onclick="editLink(this)">Day 5</a>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-
-        <!-- Skills Tab -->
-        <div id="skills" class="tab-content">
-            <div class="content-card">
-                <h2 style="text-align: center; margin-bottom: 2rem; color: #333; font-size: 2.5rem;">Skills & Technologies</h2>
-                <div class="skills-grid">
-                    <div class="skill-tag">JavaScript</div>
-                    <div class="skill-tag">Python</div>
-                    <div class="skill-tag">React</div>
-                    <div class="skill-tag">Node.js</div>
-                    <div class="skill-tag">SQL</div>
-                    <div class="skill-tag">Git</div>
-                    <div class="skill-tag">HTML/CSS</div>
-                    <div class="skill-tag">MongoDB</div>
-                    <div class="skill-tag">AWS</div>
-                    <div class="skill-tag">Docker</div>
-                    <div class="skill-tag">Machine Learning</div>
-                    <div class="skill-tag">API Development</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- About Tab -->
-        <div id="about" class="tab-content">
-            <div class="content-card">
-                <h2 style="text-align: center; margin-bottom: 2rem; color: #333; font-size: 2.5rem;">About Me</h2>
-                <p style="font-size: 1.1rem; line-height: 1.8; color: #555;">
-                    I'm a passionate developer with a love for creating innovative solutions that make a difference. 
-                    My journey in programming started several years ago, and since then, I've been constantly learning 
-                    and exploring new technologies to expand my skill set.
-                </p>
-                <br>
-                <p style="font-size: 1.1rem; line-height: 1.8; color: #555;">
-                    I believe in writing clean, efficient code and creating user experiences that are both functional 
-                    and delightful. When I'm not coding, you can find me exploring new technologies, contributing to 
-                    open source projects, or sharing knowledge with the developer community.
-                </p>
-            </div>
-        </div>
-
-        <!-- Contact Tab -->
-        <div id="contact" class="tab-content">
-            <div class="content-card">
-                <h2 style="text-align: center; margin-bottom: 2rem; color: #333; font-size: 2.5rem;">Get In Touch</h2>
-                <div class="contact-form">
-                    <div class="form-group">
-                        <label for="name">Name</label>
-                        <input type="text" id="name" name="name" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="email">Email</label>
-                        <input type="email" id="email" name="email" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="message">Message</label>
-                        <textarea id="message" name="message" rows="5" required></textarea>
-                    </div>
-                    <div style="text-align: center;">
-                        <button type="submit" class="btn" onclick="handleSubmit()">Send Message</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </main>
+    </div>
 
     <script>
-        // Tab switching functionality
-        document.querySelectorAll('.nav-link').forEach(link => {
-            link.addEventListener('click', (e) => {
-                e.preventDefault();
-                
-                // Remove active class from all nav links and tab contents
-                document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-                document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-                
-                // Add active class to clicked nav link
-                link.classList.add('active');
-                
-                // Show corresponding tab content
-                const tabId = link.getAttribute('data-tab');
-                document.getElementById(tabId).classList.add('active');
+        function showComputerScience() {
+            document.getElementById('main-page').style.display = 'none';
+            document.getElementById('cs-page').style.display = 'block';
+        }
+
+        function showMainPage() {
+            document.getElementById('main-page').style.display = 'block';
+            document.getElementById('cs-page').style.display = 'none';
+        }
+
+        function toggleWeek(weekId) {
+            const content = document.getElementById(weekId);
+            const isActive = content.classList.contains('active');
+            
+            // Close all weeks
+            document.querySelectorAll('.week-content').forEach(week => {
+                week.classList.remove('active');
             });
-        });
-
-        // Project card click handler
-        function openProject(url) {
-            // Replace these URLs with your actual project links
-            window.open(url, '_blank');
+            
+            // Open clicked week if it wasn't already open
+            if (!isActive) {
+                content.classList.add('active');
+            }
         }
 
-        // Contact form handler
-        function handleSubmit() {
-            alert('Thanks for your message! This is a demo - you can integrate with your preferred email service.');
+        function editLink(button) {
+            event.preventDefault(); // Prevent the link from navigating
+            
+            const newUrl = prompt('Enter the URL for ' + button.textContent + ':');
+            if (newUrl && newUrl.trim() !== '') {
+                button.href = newUrl;
+                alert('Link saved! ' + button.textContent + ' will now go to: ' + newUrl);
+            }
         }
-
-        // Add some smooth scrolling and animations
-        document.addEventListener('DOMContentLoaded', () => {
-            // Animate project cards on load
-            setTimeout(() => {
-                document.querySelectorAll('.project-card').forEach((card, index) => {
-                    card.style.animationDelay = `${index * 0.1}s`;
-                    card.style.animation = 'fadeIn 0.6s ease forwards';
-                });
-            }, 300);
-        });
     </script>
 </body>
 </html>
