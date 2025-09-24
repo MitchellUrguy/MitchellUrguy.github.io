@@ -5,6 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
 </head>
+    
+<body>
+    <input type="text" id="1">
+<input type="text" id="2">
+    <input type="text" id="3">
+<br>
+<br>
+<button onclick="quad()">Solve</button>
+<h1 id="quad"></h1>
 <script>
     function quad() {
     let numOne = document.getElementById("1").value;
@@ -19,6 +28,9 @@
     alert("roots are "+ answ1 "or"+ answ2)
     document.getElementById('1').value = '';
     document.getElementById('2').value = '';
+    document.getElementById('3').value = '';
     }
 </script>
+</body>
 </html>
+
