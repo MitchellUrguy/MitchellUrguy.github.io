@@ -4,44 +4,49 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
+    <style>
+        button {
+            background-color: #4CAF50;
+            color: white;
+            font-size: 1.5em;
+            padding: 18px 48px;
+            cursor: pointer;
+        }
+    </style>
 </head>
-<style>
-    .input {
-        width: 100px;
-    }
-    .solve-btn {
-        color: purple;
-    }
-</style>
+
 <body>
-    <label>a: <input class="input" type="text" id="1" placeholder="a"></label>
-    <label>b: <input class="input" type="text" id="2" placeholder="b"></label>
-    <label>c: <input class="input" type="text" id="3" placeholder="c"></label>
-    <button class="solve-btn" onclick="quad()">Solve</button>
+    <label for="1">Enter a:</label>
+    <input type="text" id="1" placeholder="a (e.g. 1)">
+    <label for="2">Enter b:</label>
+    <input type="text" id="2" placeholder="b (e.g. -3)">
+    <label for="3">Enter c:</label>
+    <input type="text" id="3" placeholder="c (e.g. 2)">
+    <br><br>
+    <button onclick="quad()">Solve</button>
     <h1 id="quad"></h1>
-<script>
-    function quad() {
-        const a = parseFloat(document.getElementById("1").value);
-        const b = parseFloat(document.getElementById("2").value);
-        const c = parseFloat(document.getElementById("3").value);
-        const discriminant = b * b - 4 * a * c;
-        if (isNaN(a) || isNaN(b) || isNaN(c)) {
-            alert("Please enter valid numbers for a, b, and c.");
-            return;
+    <script>
+        function quad() {
+            let numOne = document.getElementById("1").value;
+            let numTwo = document.getElementById("2").value;
+            let numThree = document.getElementById("3").value;
+            num1 = parseFloat(numOne);
+            num2 = parseFloat(numTwo);
+            num3 = parseFloat(numThree);
+            z = Math.sqrt((num2**2)-(4*num1*num3));
+            if (isNaN(z)) {
+                alert("no real roots");
+                return;
+            }
+            let answ1 = (-1*num2+z)/(2*num1);
+            let answ2 = (-1*num2-z)/(2*num1);
+            alert("roots are "+ answ1 + " or "+ answ2);
+            document.getElementById('1').value = '';
+            document.getElementById('2').value = '';
+            document.getElementById('3').value = '';
+            document.getElementById('quad').innerHTML = "The answer is "+answ1 + " or "+answ2;
+            document.getElementById('quad').style.display = "block";
         }
-        if (discriminant < 0) {
-            alert("No real roots");
-            document.getElementById('quad').innerHTML = "No real roots";
-            return;
-        }
-        const sqrtDisc = Math.sqrt(discriminant);
-        const root1 = (-b + sqrtDisc) / (2 * a);
-        const root2 = (-b - sqrtDisc) / (2 * a);
-        document.getElementById('quad').innerHTML = `The answer is ${root1} or ${root2}`;
-        document.getElementById("1").value = '';
-        document.getElementById("2").value = '';
-        document.getElementById("3").value = '';
-    }
-</script>
+    </script>
 </body>
 </html>
