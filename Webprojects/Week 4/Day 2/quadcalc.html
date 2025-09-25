@@ -16,22 +16,29 @@
 <h1 id="quad"></h1>
 <script>
     function quad() {
-    let numOne = document.getElementById("1").value;
-    let numTwo = document.getElementById("2").value;
-    let numThree = document.getElementById("3").value;
-    num1 = parseFloat(numOne);
-    num2 = parseFloat(numTwo);
+        let numOne = document.getElementById("1").value;
+        let numTwo = document.getElementById("2").value;
+        let numThree = document.getElementById("3").value;
+        num1 = parseFloat(numOne);
+        num2 = parseFloat(numTwo);
     num3 = parseFloat(numThree);
-    z = Math.sqrt((num2**2)+(4*num1*num3))
-    let answ1 = (-1*num2+z)/(2*num1)
-    let answ2 = (-1*num2-z)/(2*num1)
-    alert("roots are "+ answ1 + " or "+ answ2)
+    z = Math.sqrt((num2**2)-(4*num1*num3));
+    if (isNaN(z)) {
+        alert("no real roots");
+        return;
+
+    }
+    
+    let answ1 = (-1*num2+z)/(2*num1);
+    let answ2 = (-1*num2-z)/(2*num1);
+    alert("roots are "+ answ1 + " or "+ answ2);
     document.getElementById('1').value = '';
     document.getElementById('2').value = '';
     document.getElementById('3').value = '';
-    document.write("the answer is "+answ1 + " or "+answ2)
+    document.getElementById('quad').innerHTML = "The answer is "+answ1 + " or "+answ2;
+    document.getElementById('quad').style.display = "block";
+
     }
 </script>
 </body>
 </html>
-
