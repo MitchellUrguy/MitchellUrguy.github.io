@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clash Royale</title>
+    <style>
+        body {
+            background: #2e2e38;
+            color: #fff;
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        #arena {
+            width: 600px;
+            height: 400px;
+            margin: 40px auto;
+            background: #4eaf50;
+            border: 5px solid #333;
+            border-radius: 20px;
+            position: relative;
+        }
+        .tower {
+            width: 60px;
+            height: 80px;
+            background: #888;
+            border: 3px solid #fff;
+            border-radius: 10px;
+            position: absolute;
+        }
+        #player-tower { left: 50px; bottom: 40px; }
+        #enemy-tower { right: 50px; top: 40px; }
+        .card {
+            display: inline-block;
+            width: 80px;
+            height: 120px;
+            background: #fff;
+            color: #222;
+            border-radius: 10px;
+            margin: 10px;
+            vertical-align: top;
+            cursor: pointer;
+            border: 2px solid #333;
+        }
+        #cards {
+            margin-top: 20px;
+        }
+        #log {
+            margin-top: 20px;
+            min-height: 40px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Mini Clash Royale</h1>
+    <div id="arena">
+        <div class="tower" id="player-tower">🏰<br>Player<br><span id="player-hp">100</span></div>
+        <div class="tower" id="enemy-tower">🏰<br>Enemy<br><span id="enemy-hp">100</span></div>
+    </div>
+    <div id="cards">
+        <div class="card" onclick="playCard('Knight')">Knight<br>⚔️<br>10 dmg</div>
+        <div class="card" onclick="playCard('Archer')">Archer<br>🏹<br>7 dmg</div>
+        <div class="card" onclick="playCard('Fireball')">Fireball<br>🔥<br>15 dmg</div>
+    </div>
+    <div id="log"></div>
+    <script>
+        let playerHP = 100;
+        let enemyHP = 100;
+
+        function playCard(card) {
+            let dmg = 0;
+            let msg = "";
+            if (card === "Knight") {
+                dmg = 10;
+                msg = "You sent a Knight!";
+            } else if (card === "Archer") {
+                dmg = 7;
+                msg = "You sent an Archer!";
+            } else if (card === "Fireball") {
+                dmg = 15;
+                msg = "You cast Fireball!";
+            }
+            enemyHP -= dmg;
+            if (enemyHP < 0) enemyHP = 0;
+            document.getElementById("enemy-hp").textContent = enemyHP;
+            document.getElementById("log").textContent = msg + ` Enemy tower takes ${dmg} damage!`;
+
+            setTimeout(enemyTurn, 1000);
+            checkWin();
+        }
+
+        function enemyTurn() {
+            if (enemyHP <= 0) return;
+            let dmg = Math.floor(Math.random() * 11) + 5; // 5-15 dmg
+            playerHP -= dmg;
+            if (playerHP < 0) playerHP = 0;
+            document.getElementById("player-hp").textContent = playerHP;
+            document.getElementById("log").textContent += ` Enemy attacks! Your tower takes ${dmg} damage!`;
+            checkWin();
+        }
+
+        function checkWin() {
+            if (enemyHP <= 0) {
+                document.getElementById("log").textContent = "You win! 🏆";
+            } else if (playerHP <= 0) {
+                document.getElementById("log").textContent = "You lose! 💀";
+            }
+        }
+    </script>
+</body>
+</html>
