@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grader</title>
+</head>
+<body>
+
+<script>
+    let grade = parseFloat(prompt("Enter your number grade"));
+    let letter = "";
+    if (grade >= 90 && grade <= 100) {
+        letter = "A+";
+    } else if (grade >= 85) {
+        letter = "A";
+    } else if (grade >= 80) {
+        letter = "A-";
+    } else if (grade >= 77) {
+        letter = "B+";
+    } else if (grade >= 73) {
+        letter = "B";
+    } else if (grade >= 70) {
+        letter = "B-";
+    } else if (grade >= 67) {
+        letter = "C+";
+    } else if (grade >= 63) {
+        letter = "C";
+    } else if (grade >= 60) {
+        letter = "C-";
+    } else if (grade >= 57) {
+        letter = "D+";
+    } else if (grade >= 53) {
+        letter = "D";
+    } else if (grade >= 50) {
+        letter = "D-";
+    } else {
+        letter = "F";
+    }
+    document.write(`<h2>Your letter grade is ${letter}</h2>`);
+</script>
+</body>
+</html>
