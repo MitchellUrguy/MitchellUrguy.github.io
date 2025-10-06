@@ -3,9 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Image Switcher</title>
 </head>
 <body>
-    
+    <img id="myImg" src="image1.jpg" width="200">
+    <br>
+    <button onclick="switchImg()">Switch Image</button>
+    <script>
+        function switchImg() {
+            const img = document.getElementById("myImg");
+            img.src = img.src.includes("image1.jpg") ? "image2.jpg" : "image1.jpg";
+        }
+    </script>
 </body>
 </html>
