@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flag Selector</title>
+</head>
+<body>
+    <label for="country">Select a country:</label>
+    <select id="country" name="country" onchange="showFlag()">
+      <option value="canada">Canada</option>
+      <option value="india">India</option>
+      <option value="china">China</option>
+      <option value="usa">USA</option>
+      <option value="italy">Italy</option>
+    </select>
+    <br><br>
+    <img id="flagImg" src="canada.png" width="200">
+
+    <script>
+        function showFlag() {
+            const country = document.getElementById("country").value;
+            const flagMap = {
+                canada: "canada_flag.jpg",
+                india: "india_flag.jpg",
+                china: "china_flag.jpg",
+                usa: "usa_flag.jpg",
+                italy: "italy_flag.jpg"
+            };
+            document.getElementById("flagImg").src = flagMap[country];
+        }
+    </script>
+</body>
+</html>
