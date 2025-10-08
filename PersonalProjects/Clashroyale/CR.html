@@ -79,7 +79,12 @@
 
 			<div class="controls-row">
 				<button id="spellFire" class="card small">Fire Spell (4)</button>
-				<div id="info">Click a card, then click the battlefield left half to deploy. Upload sprite sheets per card.</div>
+				<div id="info">
+					Click a card, then click the battlefield left half to deploy. Upload sprite sheets per card.
+					<span style="display:block;font-size:12px;color:#ddd;margin-top:6px">
+						How to add sprites: Click "Upload Sprite" → pick a PNG/JPG sprite sheet with frames laid out horizontally. Set Frame Count / Frame W / Frame H and Anim Speed. Preview appears next to the card.
+					</span>
+				</div>
 			</div>
 		</div>
 		<canvas id="game" width="960" height="480"></canvas>
@@ -149,6 +154,65 @@ function updatePreviewFromMouse(ev){
 	if (selectedCard) canvas.classList.add('placing'); else canvas.classList.remove('placing');
 }
 
+// --- placeholder icon helper ---
+function drawPlaceholderIcon(ctx, card, w = 48, h = 32){
+	// simple background
+	ctx.clearRect(0,0,w,h);
+	ctx.fillStyle = '#ffffff';
+	ctx.fillRect(0,0,w,h);
+	ctx.strokeStyle = '#444';
+	ctx.lineWidth = 2;
+	ctx.strokeRect(1,1,w-2,h-2);
+
+	// choose visual by type
+	const pad = 6;
+	const cx = w/2, cy = h/2;
+
+	if (card.isBuilding || card.targetType === 'building'){
+		// turret / building
+		ctx.fillStyle = '#8b5a2b';
+		ctx.fillRect(pad, cy - 6, w - pad*2, 12);
+		ctx.fillStyle = '#5a3519';
+		ctx.fillRect(cx - 6, cy - 14, 12, 10); // small tower
+	} else if (card.flying){
+		// balloon-like
+		ctx.fillStyle = '#ff9f9f';
+		ctx.beginPath();
+		ctx.ellipse(cx, cy-4, 12, 8, 0, 0, Math.PI*2);
+		ctx.fill();
+		ctx.fillStyle = '#222';
+		ctx.fillRect(cx-2, cy+4, 4, 6); // gondola
+	} else if (card.count && card.count > 1){
+		// multi-unit (archers/minions/skeletons)
+		ctx.fillStyle = '#3ea6ff';
+		ctx.beginPath(); ctx.arc(cx-8, cy, 5, 0, Math.PI*2); ctx.fill();
+		ctx.beginPath(); ctx.arc(cx+8, cy, 5, 0, Math.PI*2); ctx.fill();
+	} else {
+		// single ground troop / ranged
+		if (card.projectile || card.range > 40){
+			// ranged marker
+			ctx.fillStyle = '#ffd56b';
+			ctx.beginPath();
+			ctx.rect(cx - 10, cy - 8, 20, 16);
+			ctx.fill();
+			ctx.fillStyle = '#222';
+			ctx.fillRect(cx - 2, cy - 2, 4, 4); // eye
+		} else {
+			// melee marker
+			ctx.fillStyle = '#66d66b';
+			ctx.beginPath(); ctx.arc(cx, cy, 8, 0, Math.PI*2); ctx.fill();
+			ctx.fillStyle = '#222';
+			ctx.fillRect(cx-1, cy-4, 2, 6);
+		}
+	}
+
+	// small label letter
+	ctx.fillStyle = 'rgba(0,0,0,0.6)';
+	ctx.font = '10px sans-serif';
+	ctx.textAlign = 'center';
+	ctx.fillText(card.name ? card.name.charAt(0) : '?', w - 10, h - 6);
+}
+
 // card set (added targetType and melee/ranged hints)
 const cards = [
 	{ id:'foot', name:'Knight', cost:3, hp:140, atk:25, speed:50, range:18, atkSpeed:0.9, targetType:'ground' },         // ground-only (was Footman)
@@ -172,6 +236,15 @@ function uiSetup(){
 	for (let c of cards){
 		const wrap = document.createElement('div');
 		wrap.className = 'card-row';
+
+		// icon canvas for placeholder / sprite thumbnail
+		const icon = document.createElement('canvas');
+		icon.width = 48; icon.height = 32;
+		icon.style.width = '48px'; icon.style.height = '32px';
+		icon.style.borderRadius = '4px';
+		icon.style.background = '#fff';
+		// draw initial placeholder
+		drawPlaceholderIcon(icon.getContext('2d'), c, icon.width, icon.height);
 
 		const btn = document.createElement('button');
 		btn.className = 'card';
@@ -206,6 +279,20 @@ function uiSetup(){
 			<input class="card-input frameH" type="number" min="1" value="32" title="Frame height">
 			<input class="card-input animSpeed" type="number" min="1" value="8" title="Anim speed (fps)">
 		`;
+		// when sprite is chosen, update icon; if sprite exists on load show first frame
+		function refreshIcon(){
+			const ctxIcon = icon.getContext('2d');
+			if (c.sprite && c.spriteMeta){
+				// draw first frame scaled into icon
+				const meta = c.spriteMeta;
+				ctxIcon.clearRect(0,0,icon.width,icon.height);
+				ctxIcon.drawImage(c.sprite, 0, 0, meta.frameW, meta.frameH, 0,0,icon.width,icon.height);
+			} else {
+				drawPlaceholderIcon(ctxIcon, c, icon.width, icon.height);
+			}
+		}
+		refreshIcon();
+
 		const fcInput = controls.querySelector('.frameCount');
 		const fwInput = controls.querySelector('.frameW');
 		const fhInput = controls.querySelector('.frameH');
@@ -246,6 +333,7 @@ function uiSetup(){
 				spdInput.value = c.spriteMeta.animSpeed;
 				ind.classList.add('has'); ind.innerText = 'Sprite';
 				startCardPreview();
+				refreshIcon();
 			};
 			img.src = url;
 		};
@@ -263,9 +351,11 @@ function uiSetup(){
 				c.spriteMeta.frameH = fh;
 				c.spriteMeta.animSpeed = sp;
 				if (c.sprite) startCardPreview();
+				refreshIcon();
 			});
 		});
 
+		wrap.appendChild(icon);
 		wrap.appendChild(btn);
 		wrap.appendChild(upload);
 		wrap.appendChild(ind);
@@ -317,10 +407,23 @@ function openDeckBuilder(){
 		b.className = 'card';
 		b.style.display = 'inline-flex';
 		b.style.alignItems = 'center';
-		b.style.justifyContent = 'center';
-		b.style.minWidth = '96px';
+		b.style.justifyContent = 'flex-start';
+		b.style.minWidth = '140px';
+		b.style.padding = '6px';
 		b.style.margin = '6px';
-		b.innerText = `${c.name} (${c.cost})`;
+		// small icon
+		const cv = document.createElement('canvas'); cv.width=48; cv.height=32;
+		drawPlaceholderIcon(cv.getContext('2d'), c, cv.width, cv.height);
+		if (c.sprite && c.spriteMeta){
+			const meta = c.spriteMeta;
+			cv.getContext('2d').clearRect(0,0,cv.width,cv.height);
+			cv.getContext('2d').drawImage(c.sprite, 0, 0, meta.frameW, meta.frameH, 0,0,cv.width,cv.height);
+		}
+		b.appendChild(cv);
+		const txt = document.createElement('div');
+		txt.style.marginLeft = '8px';
+		txt.innerText = `${c.name} (${c.cost})`;
+		b.appendChild(txt);
 		b.onclick = ()=> toggleAddToDeck(idx);
 		avail.appendChild(b);
 	});
@@ -374,7 +477,6 @@ function autofillDeck(){
 // clear deck
 function clearDeck(){ playerDeck = []; renderDeckSlots(); }
 
-// shuffle deck (Fisher-Yates)
 function shuffleDeck(arr){
 	for (let i = arr.length -1; i>0; i--){
 		const j = Math.floor(Math.random()*(i+1));
@@ -450,15 +552,16 @@ function renderHand(){
 			slot.classList.add('disabled');
 		} else {
 			const c = cards[idx];
-			slot.innerText = `${c.name}\n(${c.cost})`;
-			// if sprite available draw a small thumb
+			// show sprite thumbnail or placeholder icon
 			if (c.sprite && c.spriteMeta){
-				slot.innerText = '';
 				const cv = document.createElement('canvas'); cv.width=56; cv.height=40;
 				const ctxp = cv.getContext('2d');
 				const meta = c.spriteMeta;
-				const frame = 0;
-				ctxp.drawImage(c.sprite, frame*meta.frameW,0,meta.frameW,meta.frameH, 0,0,56,40);
+				ctxp.drawImage(c.sprite, 0,0,meta.frameW,meta.frameH, 0,0,56,40);
+				slot.appendChild(cv);
+			} else {
+				const cv = document.createElement('canvas'); cv.width=56; cv.height=40;
+				drawPlaceholderIcon(cv.getContext('2d'), c, cv.width, cv.height);
 				slot.appendChild(cv);
 			}
 			// highlight selection
@@ -839,6 +942,30 @@ function loop(now){
 uiSetup();
 requestAnimationFrame(loop);
 })(); // <-- Add this line to close the IIFE
+
+// after the cards definition (or anywhere in the script global scope), add a helper:
+function assignSprite(cardIndex, url, frameCount = 1, frameW = 32, frameH = 32, animSpeed = 8){
+	// Usage from browser console:
+	// assignSprite(0, '/PersonalProjects/Clashroyale/assets/knight.png', 4, 32, 32, 10)
+	if (!cards[cardIndex]) { console.warn('no card at', cardIndex); return; }
+	const card = cards[cardIndex];
+	const img = new Image();
+	img.crossOrigin = 'anonymous';
+	img.onload = () => {
+		card.sprite = img;
+		card.spriteMeta = { frameW: frameW, frameH: frameH, frameCount: Math.max(1, frameCount), animSpeed: animSpeed };
+		// if UI exists, refresh visible icon / preview by re-running uiSetup or calling per-card refresh if available
+		try { uiSetup(); renderHand(); } catch(e){ /* safe fallback */ }
+		console.log('sprite assigned to', card.name);
+	};
+	img.onerror = (e)=> console.error('failed to load', url, e);
+	img.src = url;
+}
+
+// Quick notes (no code changes):
+// - Recommended sprite sheet format: horizontal frames, same frame height; example: 128x32 with 4 frames -> frameW=32 frameH=32 frameCount=4.
+// - To add files into project folder: put image files in PersonalProjects/Clashroyale/assets/ and call assignSprite(...) with a relative URL like '/PersonalProjects/Clashroyale/assets/mySprite.png'.
+// - You can also use the Upload Sprite button in the UI which stores the sprite in-memory for that card; then set frame values in the card controls.
 </script>
 </body>
 </html>
