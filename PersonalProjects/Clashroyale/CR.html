@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lane Battler — CR Prototype</title>
+    <style>
+	*{box-sizing:border-box;margin:0;padding:0}
+	body{font-family:Segoe UI, Tahoma, Geneva, Verdana, sans-serif;background:linear-gradient(135deg,#bdc3c7 0%,#2c3e50 100%);min-height:100vh;color:#222;display:flex;align-items:flex-start;justify-content:center;padding:24px}
+	.card-row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+	.card{padding:10px 14px;background:#2c3e50;color:#fff;border-radius:6px;border:none;cursor:pointer}
+	.card.selected{outline:2px solid #ffd54f;transform:translateY(-3px)}
+	.card.disabled{opacity:.45;pointer-events:none;filter:grayscale(40%)}
+	.sprite-ind{font-size:11px;padding:4px 8px;border-radius:6px;background:#eee;display:inline-block}
+	.sprite-ind.has{background:#2ecc71;color:#042}
+	.card-controls{display:flex;flex-direction:column;gap:6px;margin-left:6px}
+	.card-input{font-size:12px;padding:6px;width:120px}
+	.sprite-preview{width:48px;height:48px;background:#00000011;border-radius:6px;border:1px solid #00000010}
+	#hud{width:960px;position:relative;margin-bottom:12px}
+	#elixir{font-size:1.1rem;margin-bottom:8px;color:#fff}
+	#cards{display:flex;flex-wrap:wrap;gap:8px;background:rgba(0,0,0,0.18);padding:10px;border-radius:8px}
+	#info{margin-top:8px;color:#eee}
+	canvas{display:block;background:#cfefff;border:2px solid #333;border-radius:6px; margin-top:12px}
+	.controls-row{display:flex;gap:8px;align-items:center;margin-top:8px}
+	.small{font-size:0.85rem;padding:6px 10px}
+
+	/* deck builder overlay */
+	#deckOverlay {
+		position: fixed;
+		inset: 0;
+		background: rgba(0,0,0,0.7);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 2000;
+	}
+	#deckModal {
+		background: #fff;
+		padding: 18px;
+		border-radius: 10px;
+		width: 920px;
+		max-width: calc(100% - 40px);
+		box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+		color: #222;
+	}
+	#availableCards { display:flex; flex-wrap:wrap; gap:8px; max-height:220px; overflow:auto; padding:8px; background:#fafafa; border-radius:8px; margin-bottom:10px; }
+	.deck-slot { display:inline-flex; align-items:center; justify-content:center; width:88px; height:56px; border:2px dashed #ddd; border-radius:6px; margin-right:6px; background:#fff; }
+	.deck-row { display:flex; gap:6px; align-items:center; margin-bottom:10px; flex-wrap:wrap; }
+	#hand { display:flex; gap:8px; align-items:center; margin-left:6px; }
+	.hand-slot { width:74px; height:56px; background:#fff; border-radius:6px; display:flex; align-items:center; justify-content:center; border:2px solid #444; cursor:pointer; opacity:0.95; }
+	.hand-slot.disabled { opacity:0.45; pointer-events:none; }
+	.selected-hand { outline:3px solid #ffd54f; transform:translateY(-2px); }
+</style>
+</head>
+<body>
+	<!-- deck builder overlay (shown until player starts a match) -->
+	<div id="deckOverlay">
+		<div id="deckModal" role="dialog" aria-modal="true">
+			<h2>Select 8 cards for your deck</h2>
+			<div style="margin:8px 0;color:#555">Pick exactly 8 cards. Click a card to add; click a deck slot to remove.</div>
+			<div id="availableCards"></div>
+
+			<div class="deck-row">
+				<div id="deckSlots" style="display:flex; gap:6px;"></div>
+				<button id="shuffleAuto" class="card small" style="margin-left:12px">Auto Fill</button>
+				<button id="clearDeck" class="card small" style="margin-left:6px; background:#c0392b">Clear</button>
+				<button id="startMatchBtn" class="card small" style="margin-left:auto; background:#2ecc71">Start Match</button>
+			</div>
+			<div style="margin-top:8px;color:#888;font-size:13px">You can still upload sprites and adjust animations before starting.</div>
+		</div>
+	</div>
+
+	<div>
+		<div id="hud">
+			<div id="elixir">Elixir: <span id="elixirVal">0</span></div>
+			<div id="cards"></div>
+			<!-- hand UI -->
+			<div id="hand"></div>
+
+			<div class="controls-row">
+				<button id="spellFire" class="card small">Fire Spell (4)</button>
+				<div id="info">Click a card, then click the battlefield left half to deploy. Upload sprite sheets per card.</div>
+			</div>
+		</div>
+		<canvas id="game" width="960" height="480"></canvas>
+	</div>
+
+<script>
+(() => {
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+
+// game state
+let elixir = 0, maxElixir = 10, elixirRate = 1/1.5;
+let selectedCard = null, placingSpell = false;
+const playerUnits = [], enemyUnits = [], projectiles = [], particles = [];
+const lanes = [H * 0.28, H * 0.5, H * 0.72];
+const river = { y: H * 0.42, h: H * 0.16 };
+const towers = { left: {x:80,y:H/2,hp:1000}, right:{x:W-80,y:H/2,hp:1000} };
+
+// bridges: two crossing zones where ground troops may be deployed / cross
+const bridges = [
+	{ x: Math.floor(W * 0.42), w: 96 },
+	{ x: Math.floor(W * 0.58), w: 96 }
+];
+
+function isInBridge(x){
+	for (let b of bridges){
+		const x1 = b.x - b.w/2, x2 = b.x + b.w/2;
+		if (x >= x1 && x <= x2) return true;
+	}
+	return false;
+}
+
+function nearestBridgeX(x){
+	let best = null, bd = 1e9;
+	for (let b of bridges){
+		const d = Math.abs(b.x - x);
+		if (d < bd){ bd = d; best = b.x; }
+	}
+	return best;
+}
+
+// --- PREVIEW STATE & HELPERS ---
+let previewX = null, previewY = null, previewLane = null, previewValid = false;
+
+function isValidPlacement(card, x, y){
+	if (!card) return false;
+	// allow spells regardless (spell uses different path)
+	// card.flying can be placed anywhere on left side including middle (bridges not required)
+	// must be on player's side (left half) unless flying (flying allowed anywhere) 
+	if (!card.flying && x > W/2) return false;
+	const lane = nearestLane(y);
+	// prevent placing ground troops into middle river lane unless on bridge
+	if (!card.flying && lane === 1 && !isInBridge(x)) return false;
+	// enough elixir? (optional visual)
+	if (elixir < card.cost) return false;
+	return true;
+}
+
+function updatePreviewFromMouse(ev){
+	const rect = canvas.getBoundingClientRect();
+	const x = ev.clientX - rect.left, y = ev.clientY - rect.top;
+	previewX = x; previewY = y;
+	previewLane = nearestLane(y);
+	previewValid = selectedCard ? isValidPlacement(selectedCard, x, y) : false;
+	// show placing cursor when selecting
+	if (selectedCard) canvas.classList.add('placing'); else canvas.classList.remove('placing');
+}
+
+// card set (added targetType and melee/ranged hints)
+const cards = [
+	{ id:'foot', name:'Knight', cost:3, hp:140, atk:25, speed:50, range:18, atkSpeed:0.9, targetType:'ground' },         // ground-only (was Footman)
+	{ id:'arch', name:'Archers', cost:3, hp:90, atk:16, speed:70, range:130, atkSpeed:1.1, projectile:true, count:2, targetType:'air-ground' },
+	{ id:'big',  name:'Giant',   cost:5, hp:340, atk:35, speed:32, range:18, atkSpeed:1.2, targetType:'building', preferBuildings:true }, // was Brute
+	{ id:'mage', name:'Wizard',    cost:4, hp:90,  atk:28, speed:40, range:110, atkSpeed:1.6, splash:true, projectile:true, targetType:'air-ground' }, // was Mage
+	{ id:'bomb', name:'Bomber',  cost:3, hp:80,  atk:40, speed:46, range:18, atkSpeed:1.1, splash:true, targetType:'ground' }, // ground splash
+	{ id:'wing', name:'Minions',cost:3, hp:40, atk:18, speed:95, range:60, atkSpeed:1.0, count:3, flying:true, targetType:'air-ground' }, // was Winglings
+	{ id:'skel', name:'Skeletons',cost:2, hp:28, atk:10, speed:80, range:16, count:4, atkSpeed:0.8, targetType:'troops' }, // troops-only
+
+	// NEW CARDS
+	{ id:'tesla', name:'Tesla', cost:4, hp:260, atk:28, speed:0, range:160, atkSpeed:0.8, projectile:true, isBuilding:true, targetType:'air-ground' },
+	{ id:'cannon', name:'Cannon', cost:3, hp:320, atk:40, speed:0, range:110, atkSpeed:1.2, isBuilding:true, targetType:'ground' },
+	{ id:'balloon', name:'Balloon', cost:5, hp:420, atk:90, speed:30, range:24, atkSpeed:1.8, flying:true, projectile:true, splash:true, targetType:'building', preferBuildings:true }
+];
+
+// UI build
+function uiSetup(){
+	const cardsDiv = document.getElementById('cards');
+	cardsDiv.innerHTML = '';
+	for (let c of cards){
+		const wrap = document.createElement('div');
+		wrap.className = 'card-row';
+
+		const btn = document.createElement('button');
+		btn.className = 'card';
+		btn.innerText = `${c.name} (${c.cost})`;
+		btn.onclick = ()=> {
+			if (elixir < c.cost) return;
+			selectedCard = c;
+			document.querySelectorAll('.card').forEach(b=>b.classList.remove('selected'));
+			btn.classList.add('selected');
+		};
+		c.btn = btn;
+
+		// upload + preview + controls
+		const upload = document.createElement('button');
+		upload.className = 'card small';
+		upload.style.background = '#16a085';
+		upload.innerText = 'Upload Sprite';
+		const file = document.createElement('input');
+		file.type = 'file'; file.accept='image/*'; file.style.display='none';
+
+		const ind = document.createElement('div');
+		ind.className = 'sprite-ind'; ind.innerText = 'No Sprite';
+
+		const preview = document.createElement('canvas');
+		preview.width = 48; preview.height = 48; preview.className = 'sprite-preview';
+
+		const controls = document.createElement('div');
+		controls.className = 'card-controls';
+		controls.innerHTML = `
+			<input class="card-input frameCount" type="number" min="1" value="1" title="Frame count">
+			<input class="card-input frameW" type="number" min="1" value="32" title="Frame width">
+			<input class="card-input frameH" type="number" min="1" value="32" title="Frame height">
+			<input class="card-input animSpeed" type="number" min="1" value="8" title="Anim speed (fps)">
+		`;
+		const fcInput = controls.querySelector('.frameCount');
+		const fwInput = controls.querySelector('.frameW');
+		const fhInput = controls.querySelector('.frameH');
+		const spdInput = controls.querySelector('.animSpeed');
+
+		// preview runner
+		function startCardPreview(){
+			if (c._previewRAF) cancelAnimationFrame(c._previewRAF);
+			let t0 = performance.now();
+			(function tick(now){
+				c._previewRAF = requestAnimationFrame(tick);
+				const meta = c.spriteMeta;
+				const ctxp = preview.getContext('2d');
+				ctxp.clearRect(0,0,preview.width, preview.height);
+				if (!c.sprite || !meta) return;
+				const elapsed = (now - t0) / 1000;
+				const frame = Math.floor(elapsed * (meta.animSpeed || 8)) % Math.max(1, meta.frameCount);
+				const sx = frame * meta.frameW, sy = 0, sw = meta.frameW, sh = meta.frameH;
+				const scale = Math.min(preview.width / sw, preview.height / sh);
+				const dw = sw * scale, dh = sh * scale;
+				ctxp.drawImage(c.sprite, sx, sy, sw, sh, (preview.width-dw)/2, (preview.height-dh)/2, dw, dh);
+			})(performance.now());
+		}
+
+		file.onchange = (ev)=>{
+			const f = file.files && file.files[0];
+			if (!f) return;
+			const url = URL.createObjectURL(f);
+			const img = new Image();
+			img.onload = ()=>{
+				const frameH = img.height || img.width;
+				const frameCount = Math.max(1, Math.floor(img.width / frameH));
+				c.sprite = img;
+				c.spriteMeta = { frameW: Math.floor(img.width / frameCount), frameH, frameCount, animSpeed: 8 };
+				fcInput.value = c.spriteMeta.frameCount;
+				fwInput.value = c.spriteMeta.frameW;
+				fhInput.value = c.spriteMeta.frameH;
+				spdInput.value = c.spriteMeta.animSpeed;
+				ind.classList.add('has'); ind.innerText = 'Sprite';
+				startCardPreview();
+			};
+			img.src = url;
+		};
+		upload.onclick = ()=> file.click();
+
+		[fcInput, fwInput, fhInput, spdInput].forEach(inp=>{
+			inp.addEventListener('input', ()=>{
+				if (!c.spriteMeta) c.spriteMeta = { frameW:32, frameH:32, frameCount:1, animSpeed:8 };
+				const fc = Math.max(1, parseInt(fcInput.value) || 1);
+				const fw = Math.max(1, parseInt(fwInput.value) || c.spriteMeta.frameW);
+				const fh = Math.max(1, parseInt(fhInput.value) || c.spriteMeta.frameH);
+				const sp = Math.max(1, parseInt(spdInput.value) || 8);
+				c.spriteMeta.frameCount = fc;
+				c.spriteMeta.frameW = fw;
+				c.spriteMeta.frameH = fh;
+				c.spriteMeta.animSpeed = sp;
+				if (c.sprite) startCardPreview();
+			});
+		});
+
+		wrap.appendChild(btn);
+		wrap.appendChild(upload);
+		wrap.appendChild(ind);
+		wrap.appendChild(preview);
+		wrap.appendChild(controls);
+		wrap.appendChild(file);
+		cardsDiv.appendChild(wrap);
+	}
+	document.getElementById('spellFire').onclick = ()=>{
+		if (elixir < 4) return;
+		selectedCard = null;
+		placingSpell = true;
+		canvas.classList.add('placing');
+	};
+	canvas.onclick = deployHandler;
+	// NEW: preview mouse handlers
+	canvas.addEventListener('mousemove', (ev)=> {
+		if (selectedCard) updatePreviewFromMouse(ev);
+	});
+	canvas.addEventListener('mouseleave', ()=> {
+		previewX = previewY = previewLane = null;
+		previewValid = false;
+		canvas.classList.remove('placing');
+	});
+	updateElixirUI();
+}
+
+// --- Deck & Hand state ---
+let playerDeck = [];      // array of card indices (0..cards.length-1)
+let deckPtr = 0;          // next draw index
+let playerHand = [null,null,null,null]; // up to 4 card indices (or null)
+let inMatch = false;
+let selectedHandIndex = null; // which hand slot is selected (null when not selecting from hand)
+
+// Enemy deck & hand (mirror player cycle)
+let enemyDeck = [];       // array of card indices (0..cards.length-1)
+let enemyDeckPtr = 0;
+let enemyHand = [null,null,null,null];
+let enemyInMatch = false;
+let enemyElixir = 0;
+let enemyTimer = 1.5; // attempt frequency
+
+// Populate deck builder UI
+function openDeckBuilder(){
+	const avail = document.getElementById('availableCards');
+	avail.innerHTML = '';
+	cards.forEach((c, idx) => {
+		const b = document.createElement('div');
+		b.className = 'card';
+		b.style.display = 'inline-flex';
+		b.style.alignItems = 'center';
+		b.style.justifyContent = 'center';
+		b.style.minWidth = '96px';
+		b.style.margin = '6px';
+		b.innerText = `${c.name} (${c.cost})`;
+		b.onclick = ()=> toggleAddToDeck(idx);
+		avail.appendChild(b);
+	});
+	renderDeckSlots();
+}
+
+// toggle add/remove card to deck (adds to first empty slot)
+function toggleAddToDeck(cardIdx){
+	// if card already in deck, remove its first occurrence
+	const p = playerDeck.indexOf(cardIdx);
+	if (p !== -1){
+		playerDeck.splice(p,1);
+		renderDeckSlots();
+		return;
+	}
+	if (playerDeck.length >= 8) return;
+	playerDeck.push(cardIdx);
+	renderDeckSlots();
+}
+
+function renderDeckSlots(){
+	const slots = document.getElementById('deckSlots');
+	slots.innerHTML = '';
+	for (let i=0;i<8;i++){
+		const s = document.createElement('div');
+		s.className = 'deck-slot';
+		s.dataset.slot = i;
+		if (playerDeck[i] !== undefined){
+			const c = cards[playerDeck[i]];
+			s.innerText = `${c.name}`;
+			s.style.border = '2px solid #337514';
+			s.onclick = ()=> { playerDeck.splice(i,1); renderDeckSlots(); };
+		} else {
+			s.innerText = `Slot ${i+1}`;
+			s.onclick = ()=> {};
+		}
+		slots.appendChild(s);
+	}
+	document.getElementById('startMatchBtn').disabled = (playerDeck.length !== 8);
+}
+
+// auto fill with random cards until 8
+function autofillDeck(){
+	playerDeck = [];
+	while (playerDeck.length < 8){
+		playerDeck.push(Math.floor(Math.random()*cards.length));
+	}
+	renderDeckSlots();
+}
+
+// clear deck
+function clearDeck(){ playerDeck = []; renderDeckSlots(); }
+
+// shuffle deck (Fisher-Yates)
+function shuffleDeck(arr){
+	for (let i = arr.length -1; i>0; i--){
+		const j = Math.floor(Math.random()*(i+1));
+		[arr[i], arr[j]] = [arr[j], arr[i]];
+	}
+}
+
+// start match: shuffle and fill hand
+function startMatch(){
+	if (playerDeck.length !== 8) return;
+	shuffleDeck(playerDeck);
+	deckPtr = 0;
+	// fill player's hand with first 4
+	for (let i=0;i<4;i++){
+		playerHand[i] = (deckPtr < playerDeck.length) ? playerDeck[deckPtr++] : null;
+	}
+	// prepare enemy deck (random for now), shuffle and fill enemy hand
+	enemyDeck = [];
+	while (enemyDeck.length < 8){
+		enemyDeck.push(Math.floor(Math.random()*cards.length));
+	}
+	shuffleDeck(enemyDeck);
+	enemyDeckPtr = 0;
+	for (let i=0;i<4;i++){
+		enemyHand[i] = (enemyDeckPtr < enemyDeck.length) ? enemyDeck[enemyDeckPtr++] : null;
+	}
+	// hide deck overlay and enable match
+	document.getElementById('deckOverlay').style.display = 'none';
+	inMatch = true;
+	enemyInMatch = true;
+	// reset elixir
+	elixir = 0; enemyElixir = 0;
+	updateElixirUI();
+	renderHand();
+}
+
+// draw next card into a hand slot (slotIndex)
+function drawToHand(slotIndex){
+	if (deckPtr < playerDeck.length){
+		playerHand[slotIndex] = playerDeck[deckPtr++];
+	} else {
+		playerHand[slotIndex] = null;
+	}
+	renderHand();
+}
+
+// Consume played enemy hand and draw next
+function consumeEnemyPlayedHand(slotIndex){
+	if (slotIndex === null) return;
+	drawToEnemyHand(slotIndex);
+}
+
+// draw next card into enemy hand slot
+function drawToEnemyHand(slotIndex){
+	if (enemyDeckPtr < enemyDeck.length){
+		enemyHand[slotIndex] = enemyDeck[enemyDeckPtr++];
+	} else {
+		enemyHand[slotIndex] = null;
+	}
+	// no UI render for enemy hand in this prototype
+}
+
+// render hand UI (4 slots)
+function renderHand(){
+	const handDiv = document.getElementById('hand');
+	handDiv.innerHTML = '';
+	for (let i=0;i<4;i++){
+		const idx = playerHand[i];
+		const slot = document.createElement('div');
+		slot.className = 'hand-slot';
+		if (idx === null || idx === undefined){
+			slot.innerText = 'Empty';
+			slot.classList.add('disabled');
+		} else {
+			const c = cards[idx];
+			slot.innerText = `${c.name}\n(${c.cost})`;
+			// if sprite available draw a small thumb
+			if (c.sprite && c.spriteMeta){
+				slot.innerText = '';
+				const cv = document.createElement('canvas'); cv.width=56; cv.height=40;
+				const ctxp = cv.getContext('2d');
+				const meta = c.spriteMeta;
+				const frame = 0;
+				ctxp.drawImage(c.sprite, frame*meta.frameW,0,meta.frameW,meta.frameH, 0,0,56,40);
+				slot.appendChild(cv);
+			}
+			// highlight selection
+			if (selectedHandIndex === i) slot.classList.add('selected-hand');
+			// click selects this hand slot for playing
+			slot.onclick = ()=> {
+				// require enough elixir
+				if (elixir < c.cost) return;
+				selectedCard = c; // selected card object used by deployHandler
+				selectedHandIndex = i;
+				// update selection visuals (existing card buttons deselected)
+				document.querySelectorAll('.card').forEach(b=>b.classList.remove('selected'));
+				renderHand();
+			};
+		}
+		handDiv.appendChild(slot);
+	}
+	// disable hand slots if not in match
+	if (!inMatch) handDiv.style.opacity = 0.4; else handDiv.style.opacity = 1;
+}
+
+// consume played hand card after a successful deploy
+function consumePlayedHand(){
+	if (selectedHandIndex === null) return;
+	// replace the played slot with next deck card
+	drawToHand(selectedHandIndex);
+	selectedHandIndex = null;
+	renderHand();
+}
+
+// hook into deployHandler: after we successfully deploy a played card, consume it
+// Replace the existing deployHandler's success branch to call consumePlayedHand()
+// --- OVERRIDE / FINAL DEFINITIONS (ensures script completes) ---
+
+function deployHandler(ev){
+	const rect = canvas.getBoundingClientRect();
+	const x = ev.clientX - rect.left, y = ev.clientY - rect.top;
+
+	// spell placement
+	if (placingSpell){
+		spawnSpell(x,y);
+		placingSpell = false;
+		canvas.classList.remove('placing');
+		elixir = Math.max(0, elixir - 4);
+		updateElixirUI();
+		return;
+	}
+
+	// no card selected
+	if (!selectedCard) return;
+
+	// only allow playing from hand during match
+	if (!inMatch){
+		const info = document.getElementById('info');
+		info.style.color = '#ffdddd';
+		info.innerText = 'Start a match and select a card from your hand.';
+		setTimeout(()=>{ info.style.color=''; info.innerText='Click a card, then click the battlefield left half to deploy.'; },1200);
+		selectedCard = null;
+		selectedHandIndex = null;
+		return;
+	}
+
+	// must be a card that's currently in the hand
+	if (selectedHandIndex === null){
+		const info = document.getElementById('info');
+		info.style.color = '#ffdddd';
+		info.innerText = 'Select a card from your hand to deploy.';
+		setTimeout(()=>{ info.style.color=''; info.innerText='Click a card, then click the battlefield left half to deploy.'; },1200);
+		selectedCard = null;
+		return;
+	}
+
+	// placement constraints
+	if (x > W/2 && !selectedCard.flying) return;
+	if (elixir < selectedCard.cost) return;
+	const lane = nearestLane(y);
+	if (!selectedCard.flying && lane === 1 && !isInBridge(x)){
+		const info = document.getElementById('info');
+		info.style.color = '#ffdddd';
+		info.innerText = 'Place ground units on the left/right lanes or on a bridge.';
+		setTimeout(()=>{ info.style.color=''; info.innerText='Click a card, then click the battlefield left half to deploy.'; },1200);
+		return;
+	}
+
+	// deploy unit
+	deployUnit(selectedCard, x, lane, 'player');
+
+	// pay cost
+	elixir = Math.max(0, elixir - selectedCard.cost);
+	updateElixirUI();
+
+	// consume the played card from hand and draw next
+	consumePlayedHand();
+
+	// clear selection visual
+	selectedCard = null;
+	selectedHandIndex = null;
+	document.querySelectorAll('.card').forEach(b=>b.classList.remove('selected'));
+}
+
+// AI: use same cycling mechanics — choose playable card from enemyHand and place it respecting bridges/flying
+function enemyAI(dt){
+	// regenerate enemy elixir
+	enemyElixir = Math.min(maxElixir, enemyElixir + elixirRate * dt);
+
+	enemyTimer -= dt;
+	if (enemyTimer > 0) return;
+	enemyTimer = 1.0 + Math.random() * 1.6; // next attempt in ~1-2.6s
+
+	if (!enemyInMatch) return;
+
+	// Build a list of playable slots (hand indices)
+	const playableSlots = [];
+	for (let i=0;i<enemyHand.length;i++){
+		const idx = enemyHand[i];
+		if (idx === null || idx === undefined) continue;
+		const cardIdx = enemyHand[i];
+		const card = cards[cardIdx];
+		if (card.cost <= enemyElixir) playableSlots.push(i);
+	}
+
+	// prefer higher-cost playable cards first (simple heuristic)
+	playableSlots.sort((a,b) => (cards[enemyHand[b]].cost - cards[enemyHand[a]].cost));
+
+	// Try each playable slot and attempt to deploy it on a suitable lane
+	for (let slot of playableSlots){
+		const cardIdx = enemyHand[slot];
+		const card = cards[cardIdx];
+		// choose lane preference order: try side lanes first, then bridge middle
+		const laneOrder = [2,0,1]; // bias towards bottom (2) then top (0), then middle
+		for (let lane of laneOrder){
+			let x = enemyPlacementXForLane(lane, card);
+			let y = lanes[lane];
+			// if middle lane and ground, snap to bridge center
+			if (lane === 1 && !card.flying && isInBridge(x)){
+				y = river.y + river.h/2;
+			}
+			// ensure placement x is on enemy side when required
+			if (!card.flying && x < W/2) continue;
+			// check validity
+			if (!isValidEnemyPlacement(card, x, y)) continue;
+			// deploy
+			deployUnit(card, x, lane, 'enemy');
+			enemyElixir = Math.max(0, enemyElixir - card.cost);
+			consumeEnemyPlayedHand(slot);
+			return; // only play one card per ai tick
+		}
+	}
+	// If no playable card, do nothing this tick
+}
+
+// helper: validity for enemy placement (mirror of isValidPlacement but for right side)
+function isValidEnemyPlacement(card, x, y){
+	if (!card) return false;
+	// ground cards must be placed on enemy side (right half) unless flying
+	if (!card.flying && x < W/2) return false;
+	const lane = nearestLane(y);
+	// prevent placing ground troops into middle river lane unless on bridge
+	if (!card.flying && lane === 1 && !isInBridge(x)) return false;
+	if (enemyElixir < card.cost) return false;
+	return true;
+}
+
+// choose an x for enemy placement for given lane
+function enemyPlacementXForLane(lane, card){
+	if (lane === 1){
+		// prefer right-side bridge (the second bridge)
+		const b = bridges[1] || bridges[0];
+		return b ? b.x : (W - 120);
+	}
+	// place a little before the tower on the right
+	return W - 120 + (Math.random()*24 - 12);
+}
+
+// updateProjectiles, updateParticles, draw, drawTower, drawUnitSprite, loop
+function updateProjectiles(dt){
+	for (let i=projectiles.length-1;i>=0;i--){
+		const p = projectiles[i];
+		p.t = (p.t || 0) + dt;
+		if (p.type === 'bullet'){
+			p.x += p.vx * dt; p.y += p.vy * dt;
+			// small trail
+			if (Math.random() < 0.25) particles.push({x:p.x,y:p.y,vx:(Math.random()-0.5)*20,vy:(Math.random()-0.5)*20,life:0.35,col:'#ffd',t:0});
+			// retarget if needed
+			if (!p.target || p.target.hp <= 0){
+				const list = p.team === 'player' ? enemyUnits : playerUnits;
+				let nearest=null, md=1e9;
+				for (let u of list){ const d = Math.hypot(u.x-p.x,u.y-p.y); if (d<md){md=d;nearest=u;} }
+				if (nearest) p.target = nearest;
+			}
+			if (p.target){
+				const d = Math.hypot(p.target.x - p.x, p.target.y - p.y);
+				if (d < 14 || p.t > 3){
+					if (p.target) p.target.hp -= p.dmg || 0;
+					if (p.splash){
+						const list = p.team === 'player' ? enemyUnits : playerUnits;
+						for (let u of list) if (Math.hypot(u.x-p.x,u.y-p.y) < 50) u.hp -= (p.dmg || 0) * 0.6;
+					}
+					spawnParticles(p.x,p.y,'#ffbb66',10);
+					projectiles.splice(i,1);
+				}
+			}
+		} else if (p.type === 'fire'){
+			if (!p.t) p.t = 0;
+			p.t += dt;
+			if (p.t > 0.12 && !p.applied){
+				p.applied = true;
+				for (let u of [...playerUnits,...enemyUnits]) if (Math.hypot(u.x - p.x, u.y - p.y) < 60) u.hp -= 120;
+				if (Math.hypot(towers.left.x - p.x, towers.left.y - p.y) < 60) towers.left.hp -= 120;
+				if (Math.hypot(towers.right.x - p.x, towers.right.y - p.y) < 60) towers.right.hp -= 120;
+				spawnParticles(p.x,p.y,'#ff7733',18);
+			}
+			if (p.t > 1.2) projectiles.splice(i,1);
+		}
+	}
+}
+
+function updateParticles(dt){
+	for (let i=particles.length-1;i>=0;i--){
+		const q = particles[i];
+		q.t = (q.t || 0) + dt;
+		q.x += (q.vx || 0) * dt;
+		q.y += (q.vy || 0) * dt;
+		q.vy = (q.vy || 0) + 180 * dt;
+		if (q.t > (q.life || 0.8)) particles.splice(i,1);
+	}
+}
+
+function draw(dt){
+	ctx.clearRect(0,0,W,H);
+	// background
+	ctx.fillStyle = '#cfefff'; ctx.fillRect(0,0,W,H);
+	// river overlay
+	ctx.fillStyle = '#6fb3d2'; ctx.fillRect(0, river.y, W, river.h);
+
+	// invalid area highlight when placing ground card
+	if (selectedCard && !selectedCard.flying){
+		ctx.fillStyle = 'rgba(255,0,0,0.12)';
+		ctx.fillRect(W/2, 0, W/2, H);
+	}
+
+	// draw bridges
+	for (let b of bridges){
+		const x1 = b.x - b.w/2, x2 = b.x + b.w/2;
+		const by = river.y + river.h/2 - 10;
+		const bh = 20;
+		ctx.fillStyle = 'rgba(0,0,0,0.12)';
+		ctx.fillRect(x1, river.y + river.h, b.w, 6);
+		ctx.fillStyle = '#8b5a2b'; ctx.fillRect(x1, by, b.w, bh);
+		ctx.strokeStyle = '#6f4420';
+		for (let px = x1; px < x2; px += 10){
+			ctx.beginPath(); ctx.moveTo(px, by); ctx.lineTo(px, by+bh); ctx.stroke();
+		}
+		ctx.fillStyle = '#5a3519';
+		ctx.fillRect(x1-4, by-4, 4, bh+8);
+		ctx.fillRect(x2, by-4, 4, bh+8);
+	}
+
+	// lanes
+	ctx.strokeStyle = 'rgba(0,0,0,0.06)';
+	for (let ly of lanes){ ctx.beginPath(); ctx.moveTo(0,ly); ctx.lineTo(W,ly); ctx.stroke(); }
+
+	// towers, units, projectiles, particles
+	drawTower(towers.left); drawTower(towers.right);
+	for (let u of [...playerUnits, ...enemyUnits]) drawUnitSprite(u, dt);
+
+	for (let p of projectiles){
+		if (p.type === 'bullet'){
+			ctx.beginPath(); ctx.fillStyle = '#222'; ctx.arc(p.x, p.y, 5, 0, Math.PI*2); ctx.fill();
+			ctx.fillStyle = 'rgba(255,200,60,0.6)'; ctx.beginPath(); ctx.arc(p.x, p.y, 9, 0, Math.PI*2); ctx.fill();
+		} else if (p.type === 'fire'){
+			const alpha = Math.max(0, 1 - (p.t || 0) / 1.2);
+			ctx.beginPath(); ctx.fillStyle = `rgba(255,100,0,${alpha})`; ctx.arc(p.x, p.y, 20 + 40 * Math.min(1, (p.t||0)*2), 0, Math.PI*2); ctx.fill();
+		}
+	}
+
+	for (let q of particles){
+		ctx.beginPath(); ctx.fillStyle = q.col || '#fff'; ctx.globalAlpha = Math.max(0, 1 - q.t / (q.life || 0.8));
+		ctx.arc(q.x, q.y, 3, 0, Math.PI*2); ctx.fill(); ctx.globalAlpha = 1;
+	}
+
+	// placement preview drawn on top
+	if (selectedCard && previewX != null){
+		let snapY = lanes[previewLane];
+		if (previewLane === 1 && isInBridge(previewX) && !selectedCard.flying) snapY = river.y + river.h/2;
+		const valid = previewValid;
+		ctx.save(); ctx.globalAlpha = 0.9;
+		if (selectedCard.sprite && selectedCard.spriteMeta){
+			const meta = selectedCard.spriteMeta;
+			const time = (performance.now()/1000) * (meta.animSpeed || 8);
+			const frame = Math.floor(time) % Math.max(1, meta.frameCount);
+			const sx = frame * meta.frameW, sy = 0, sw = meta.frameW, sh = meta.frameH;
+			const drawW = 36, drawH = drawW * (sh / sw);
+			ctx.drawImage(selectedCard.sprite, sx, sy, sw, sh, previewX - drawW/2, snapY - drawH/2, drawW, drawH);
+			if (!valid){ ctx.fillStyle = 'rgba(255,0,0,0.28)'; ctx.fillRect(previewX - drawW/2, snapY - drawH/2, drawW, drawH); }
+			else { ctx.strokeStyle = 'rgba(0,255,0,0.9)'; ctx.lineWidth = 2; ctx.strokeRect(previewX - drawW/2, snapY - drawH/2, drawW, drawH); }
+		} else {
+			ctx.beginPath();
+			ctx.fillStyle = valid ? 'rgba(50,200,50,0.35)' : 'rgba(255,0,0,0.25)';
+			ctx.strokeStyle = valid ? 'rgba(0,200,0,0.9)' : 'rgba(200,0,0,0.9)';
+			ctx.lineWidth = 2;
+			ctx.arc(previewX, snapY, 14, 0, Math.PI*2);
+			ctx.fill(); ctx.stroke();
+		}
+		ctx.globalAlpha = 1; ctx.restore();
+	}
+}
+
+function drawTower(t){
+	ctx.save(); ctx.translate(t.x,t.y);
+	ctx.fillStyle = '#7b4f2f'; ctx.fillRect(-28,-36,56,56);
+	ctx.fillStyle = '#222'; ctx.fillRect(-28,20,56,8);
+	ctx.fillStyle = '#ff4d4d'; ctx.fillRect(-30,-48,60,6);
+	const w = Math.max(0, Math.min(60,(t.hp/1000)*60));
+	ctx.fillStyle = '#6bff6b'; ctx.fillRect(-30,-48,w,6);
+	ctx.restore();
+}
+
+function drawUnitSprite(u, dt){
+	// animated sprite or fallback
+	if (u.sprite && u.spriteMeta){
+		const meta = u.spriteMeta;
+		const time = (performance.now()/1000) * (meta.animSpeed || 8) + (u.animOffset||0)/1000;
+		const frame = Math.floor(time) % Math.max(1, meta.frameCount);
+		const sx = frame * meta.frameW, sy = 0, sw = meta.frameW, sh = meta.frameH;
+		ctx.save();
+		const bob = Math.sin((performance.now()+u.animOffset)/200)*2;
+		const spawnScale = Math.min(1, 0.2 + (u.spawnT||0) * 3);
+		if (u.team === 'enemy'){ ctx.translate(u.x, u.y + bob); ctx.scale(-spawnScale, spawnScale); }
+		else { ctx.translate(u.x, u.y + bob); ctx.scale(spawnScale, spawnScale); }
+		const drawW = 28, drawH = 28 * (sh / sw);
+		ctx.drawImage(u.sprite, sx, sy, sw, sh, -drawW/2, -drawH/2, drawW, drawH);
+		ctx.fillStyle = '#ff4d4d'; ctx.fillRect(-12, -20, 24, 4);
+		const hpw = Math.max(0, Math.min(24, (u.hp / (u.maxHp||200)) * 24));
+		ctx.fillStyle = '#6bff6b'; ctx.fillRect(-12, -20, hpw, 4);
+		ctx.restore();
+		return;
+	}
+	// fallback procedural
+	ctx.save();
+	const bob = Math.sin((performance.now()+u.animOffset)/200)*2;
+	const spawnScale = Math.min(1, 0.2 + (u.spawnT||0) * 3);
+	ctx.translate(u.x, u.y + bob);
+	ctx.scale(spawnScale, spawnScale);
+	const isPlayer = u.team === 'player';
+	const baseColor = isPlayer ? '#3ea6ff' : '#ff6b6b';
+	const accent = isPlayer ? '#0366d6' : '#b22222';
+	ctx.beginPath(); ctx.fillStyle = baseColor; ctx.arc(0,0,12,0,Math.PI*2); ctx.fill();
+	ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(4,-3,3,0,Math.PI*2); ctx.fill();
+	ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(4,-3,1.2,0,Math.PI*2); ctx.fill();
+	const swing = Math.sin((performance.now()+u.animOffset)/150) * 0.6;
+	ctx.save(); ctx.rotate(swing * (isPlayer ? 0.6 : -0.6)); ctx.fillStyle = accent; ctx.fillRect(6, -3, 14, 6); ctx.restore();
+	ctx.fillStyle = '#ff4d4d'; ctx.fillRect(-12, -20, 24, 4);
+	const hpw2 = Math.max(0, Math.min(24, (u.hp / (u.maxHp||200)) * 24));
+	ctx.fillStyle = '#6bff6b'; ctx.fillRect(-12, -20, hpw2, 4);
+	ctx.restore();
+}
+
+function updateElixirUI(){ document.getElementById('elixirVal').innerText = Math.floor(elixir); }
+
+let last = performance.now();
+function loop(now){
+	const dt = (now - last)/1000; last = now;
+	elixir = Math.min(maxElixir, elixir + elixirRate*dt);
+	updateElixirUI();
+	for (let c of cards) if (c.btn) c.btn.classList.toggle('disabled', elixir < c.cost);
+	document.getElementById('spellFire').classList.toggle('disabled', elixir < 4);
+	enemyAI(dt);
+	updateUnits(playerUnits, dt);
+	updateUnits(enemyUnits, dt);
+	updateProjectiles(dt);
+	updateParticles(dt);
+	draw(dt);
+	requestAnimationFrame(loop);
+}
+
+// start UI and loop
+uiSetup();
+requestAnimationFrame(loop);
+})(); // <-- Add this line to close the IIFE
+</script>
+</body>
+</html>
