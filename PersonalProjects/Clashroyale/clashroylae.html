@@ -3,109 +3,647 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Clash Royale</title>
+    <title>Clash Royale MVP</title>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            background: #2e2e38;
-            color: #fff;
-            font-family: Arial, sans-serif;
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        #gameContainer {
+            width: 400px;
+            height: 700px;
+            background: #2a2a2a;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            position: relative;
+            overflow: hidden;
+        }
+
+        #battlefield {
+            width: 100%;
+            height: 500px;
+            background: linear-gradient(to bottom, #4a7c59, #3a5f47);
+            position: relative;
+            border-bottom: 3px solid #333;
+        }
+
+        .lane {
+            position: absolute;
+            width: 2px;
+            height: 100%;
+            background: rgba(255,255,255,0.1);
+        }
+
+        .lane.left { left: 33%; }
+        .lane.right { right: 33%; }
+
+        .tower {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 12px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+
+        .tower.player {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: 3px solid #4a5fe8;
+        }
+
+        .tower.enemy {
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            border: 3px solid #f5576c;
+        }
+
+        .tower.king {
+            width: 60px;
+            height: 60px;
+            font-size: 14px;
+        }
+
+        .tower.destroyed {
+            background: #555;
+            opacity: 0.5;
+            border-color: #333;
+        }
+
+        .tower-health {
+            position: absolute;
+            bottom: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: #0f0;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+        }
+
+        #playerKing { bottom: 30px; left: 50%; transform: translateX(-50%); }
+        #playerLeft { bottom: 100px; left: 20%; }
+        #playerRight { bottom: 100px; right: 20%; }
+        #enemyKing { top: 30px; left: 50%; transform: translateX(-50%); }
+        #enemyLeft { top: 100px; left: 20%; }
+        #enemyRight { top: 100px; right: 20%; }
+
+        #ui {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 200px;
+            background: linear-gradient(to bottom, #333, #222);
+            padding: 10px;
+        }
+
+        #elixirBar {
+            width: 90%;
+            height: 20px;
+            background: #444;
+            border-radius: 10px;
+            margin: 0 auto 10px;
+            overflow: hidden;
+            position: relative;
+            border: 2px solid #555;
+        }
+
+        #elixirFill {
+            height: 100%;
+            background: linear-gradient(90deg, #e942f5, #8e42f5);
+            width: 0%;
+            transition: width 0.1s linear;
+            box-shadow: 0 0 10px rgba(233, 66, 245, 0.5);
+        }
+
+        #elixirText {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            line-height: 20px;
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+        }
+
+        #cards {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 10px;
+            gap: 5px;
+        }
+
+        .card {
+            width: 70px;
+            height: 90px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: 3px solid #4a5fe8;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            position: relative;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+
+        .card:hover:not(.disabled) {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+        }
+
+        .card.selected {
+            border-color: #ffd700;
+            transform: translateY(-10px);
+            box-shadow: 0 0 20px rgba(255,215,0,0.5);
+        }
+
+        .card.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .card-icon {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .card-name {
+            font-size: 10px;
+            color: white;
+            font-weight: bold;
             text-align: center;
         }
-        #arena {
-            width: 600px;
-            height: 400px;
-            margin: 40px auto;
-            background: #4eaf50;
-            border: 5px solid #333;
-            border-radius: 20px;
-            position: relative;
-        }
-        .tower {
-            width: 60px;
-            height: 80px;
-            background: #888;
-            border: 3px solid #fff;
-            border-radius: 10px;
+
+        .card-cost {
             position: absolute;
+            top: 5px;
+            right: 5px;
+            background: #8e42f5;
+            color: white;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: bold;
+            border: 2px solid #fff;
         }
-        #player-tower { left: 50px; bottom: 40px; }
-        #enemy-tower { right: 50px; top: 40px; }
-        .card {
-            display: inline-block;
-            width: 80px;
-            height: 120px;
-            background: #fff;
-            color: #222;
-            border-radius: 10px;
-            margin: 10px;
-            vertical-align: top;
+
+        .unit {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            transition: all 0.1s linear;
+            z-index: 10;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+
+        .unit.player {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: 2px solid #4a5fe8;
+        }
+
+        .unit.enemy {
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            border: 2px solid #f5576c;
+        }
+
+        .unit-health {
+            position: absolute;
+            bottom: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: #0f0;
+            padding: 1px 4px;
+            border-radius: 2px;
+            font-size: 8px;
+        }
+
+        .projectile {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: #ffeb3b;
+            border-radius: 50%;
+            z-index: 15;
+            box-shadow: 0 0 10px rgba(255,235,59,0.8);
+        }
+
+        #timer {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 18px;
+            z-index: 20;
+        }
+
+        #gameOver {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.9);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            display: none;
+            z-index: 100;
+        }
+
+        #gameOver h2 {
+            margin-bottom: 15px;
+            font-size: 28px;
+        }
+
+        #gameOver button {
+            padding: 10px 30px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 8px;
             cursor: pointer;
-            border: 2px solid #333;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.3s ease;
         }
-        #cards {
-            margin-top: 20px;
+
+        #gameOver button:hover {
+            transform: scale(1.05);
         }
-        #log {
-            margin-top: 20px;
-            min-height: 40px;
+
+        .damage-text {
+            position: absolute;
+            color: #ff0;
+            font-weight: bold;
+            font-size: 14px;
+            pointer-events: none;
+            z-index: 50;
+            animation: damageFloat 1s ease-out forwards;
+        }
+
+        @keyframes damageFloat {
+            0% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
         }
     </style>
 </head>
 <body>
-    <h1>Mini Clash Royale</h1>
-    <div id="arena">
-        <div class="tower" id="player-tower">🏰<br>Player<br><span id="player-hp">100</span></div>
-        <div class="tower" id="enemy-tower">🏰<br>Enemy<br><span id="enemy-hp">100</span></div>
+    <div id="gameContainer">
+        <div id="battlefield">
+            <div class="lane left"></div>
+            <div class="lane right"></div>
+            
+            <div id="timer">3:00</div>
+            
+            <!-- Enemy Towers -->
+            <div class="tower enemy king" id="enemyKing">
+                👑
+                <span class="tower-health">2500</span>
+            </div>
+            <div class="tower enemy" id="enemyLeft">
+                🏰
+                <span class="tower-health">1500</span>
+            </div>
+            <div class="tower enemy" id="enemyRight">
+                🏰
+                <span class="tower-health">1500</span>
+            </div>
+            
+            <!-- Player Towers -->
+            <div class="tower player king" id="playerKing">
+                👑
+                <span class="tower-health">2500</span>
+            </div>
+            <div class="tower player" id="playerLeft">
+                🏰
+                <span class="tower-health">1500</span>
+            </div>
+            <div class="tower player" id="playerRight">
+                🏰
+                <span class="tower-health">1500</span>
+            </div>
+        </div>
+        
+        <div id="ui">
+            <div id="elixirBar">
+                <div id="elixirFill"></div>
+                <div id="elixirText">0 / 10</div>
+            </div>
+            
+            <div id="cards">
+                <div class="card" data-type="knight" data-cost="3">
+                    <span class="card-icon">⚔️</span>
+                    <span class="card-name">Knight</span>
+                    <span class="card-cost">3</span>
+                </div>
+                <div class="card" data-type="archer" data-cost="2">
+                    <span class="card-icon">🏹</span>
+                    <span class="card-name">Archer</span>
+                    <span class="card-cost">2</span>
+                </div>
+                <div class="card" data-type="wizard" data-cost="5">
+                    <span class="card-icon">🧙</span>
+                    <span class="card-name">Wizard</span>
+                    <span class="card-cost">5</span>
+                </div>
+                <div class="card" data-type="giant" data-cost="7">
+                    <span class="card-icon">👹</span>
+                    <span class="card-name">Giant</span>
+                    <span class="card-cost">7</span>
+                </div>
+                <div class="card" data-type="fireball" data-cost="4">
+                    <span class="card-icon">🔥</span>
+                    <span class="card-name">Fireball</span>
+                    <span class="card-cost">4</span>
+                </div>
+            </div>
+        </div>
+        
+        <div id="gameOver">
+            <h2 id="gameResult"></h2>
+            <button onclick="resetGame()">Play Again</button>
+        </div>
     </div>
-    <div id="cards">
-        <div class="card" onclick="playCard('Knight')">Knight<br>⚔️<br>10 dmg</div>
-        <div class="card" onclick="playCard('Archer')">Archer<br>🏹<br>7 dmg</div>
-        <div class="card" onclick="playCard('Fireball')">Fireball<br>🔥<br>15 dmg</div>
-    </div>
-    <div id="log"></div>
+
     <script>
-        let playerHP = 100;
-        let enemyHP = 100;
-
-        function playCard(card) {
-            let dmg = 0;
-            let msg = "";
-            if (card === "Knight") {
-                dmg = 10;
-                msg = "You sent a Knight!";
-            } else if (card === "Archer") {
-                dmg = 7;
-                msg = "You sent an Archer!";
-            } else if (card === "Fireball") {
-                dmg = 15;
-                msg = "You cast Fireball!";
+        // Game state
+        const game = {
+            elixir: 5,
+            maxElixir: 10,
+            elixirRate: 1,
+            selectedCard: null,
+            units: [],
+            projectiles: [],
+            gameTime: 180, // 3 minutes
+            gameRunning: true,
+            towers: {
+                player: {
+                    king: { health: 2500, maxHealth: 2500, x: 200, y: 470 },
+                    left: { health: 1500, maxHealth: 1500, x: 80, y: 400 },
+                    right: { health: 1500, maxHealth: 1500, x: 320, y: 400 }
+                },
+                enemy: {
+                    king: { health: 2500, maxHealth: 2500, x: 200, y: 30 },
+                    left: { health: 1500, maxHealth: 1500, x: 80, y: 100 },
+                    right: { health: 1500, maxHealth: 1500, x: 320, y: 100 }
+                }
             }
-            enemyHP -= dmg;
-            if (enemyHP < 0) enemyHP = 0;
-            document.getElementById("enemy-hp").textContent = enemyHP;
-            document.getElementById("log").textContent = msg + ` Enemy tower takes ${dmg} damage!`;
+        };
 
-            setTimeout(enemyTurn, 1000);
-            checkWin();
-        }
-//hello
-        function enemyTurn() {
-            if (enemyHP <= 0) return;
-            let dmg = Math.floor(Math.random() * 11) + 5; // 5-15 dmg
-            playerHP -= dmg;
-            if (playerHP < 0) playerHP = 0;
-            document.getElementById("player-hp").textContent = playerHP;
-            document.getElementById("log").textContent += ` Enemy attacks! Your tower takes ${dmg} damage!`;
-            checkWin();
-        }
+        // Card definitions
+        const cardTypes = {
+            knight: {
+                health: 300,
+                damage: 50,
+                speed: 1,
+                range: 40,
+                attackSpeed: 1000,
+                icon: '⚔️'
+            },
+            archer: {
+                health: 150,
+                damage: 30,
+                speed: 1.5,
+                range: 120,
+                attackSpeed: 800,
+                icon: '🏹'
+            },
+            wizard: {
+                health: 200,
+                damage: 80,
+                speed: 1,
+                range: 100,
+                attackSpeed: 1500,
+                icon: '🧙'
+            },
+            giant: {
+                health: 800,
+                damage: 100,
+                speed: 0.5,
+                range: 40,
+                attackSpeed: 2000,
+                icon: '👹'
+            },
+            fireball: {
+                damage: 200,
+                radius: 80,
+                icon: '🔥'
+            }
+        };
 
-        function checkWin() {
-            if (enemyHP <= 0) {
-                document.getElementById("log").textContent = "You win! 🏆";
-            } else if (playerHP <= 0) {
-                document.getElementById("log").textContent = "You lose! 💀";
+        // Unit class
+        class Unit {
+            constructor(type, x, y, team) {
+                this.type = type;
+                this.x = x;
+                this.y = y;
+                this.team = team;
+                this.stats = {...cardTypes[type]};
+                this.health = this.stats.health;
+                this.target = null;
+                this.lastAttack = 0;
+                this.element = this.createElement();
+            }
+
+            createElement() {
+                const el = document.createElement('div');
+                el.className = `unit ${this.team}`;
+                el.innerHTML = `${this.stats.icon}<span class="unit-health">${this.health}</span>`;
+                el.style.left = this.x - 15 + 'px';
+                el.style.top = this.y - 15 + 'px';
+                document.getElementById('battlefield').appendChild(el);
+                return el;
+            }
+
+            update() {
+                if (!this.target || this.target.health <= 0) {
+                    this.findTarget();
+                }
+
+                if (this.target) {
+                    const dist = this.getDistance(this.target);
+                    
+                    if (dist <= this.stats.range) {
+                        // Attack
+                        const now = Date.now();
+                        if (now - this.lastAttack > this.stats.attackSpeed) {
+                            this.attack();
+                            this.lastAttack = now;
+                        }
+                    } else {
+                        // Move towards target
+                        const angle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
+                        this.x += Math.cos(angle) * this.stats.speed;
+                        this.y += Math.sin(angle) * this.stats.speed;
+                    }
+                }
+
+                this.element.style.left = this.x - 15 + 'px';
+                this.element.style.top = this.y - 15 + 'px';
+                this.element.querySelector('.unit-health').textContent = Math.ceil(this.health);
+            }
+
+            findTarget() {
+                const enemyTeam = this.team === 'player' ? 'enemy' : 'player';
+                const towers = game.towers[enemyTeam];
+                let minDist = Infinity;
+                let closest = null;
+
+                // Check towers
+                for (let key in towers) {
+                    if (towers[key].health > 0) {
+                        const dist = this.getDistance(towers[key]);
+                        if (dist < minDist) {
+                            minDist = dist;
+                            closest = towers[key];
+                        }
+                    }
+                }
+
+                // Check enemy units
+                game.units.forEach(unit => {
+                    if (unit.team !== this.team && unit.health > 0) {
+                        const dist = this.getDistance(unit);
+                        if (dist < minDist) {
+                            minDist = dist;
+                            closest = unit;
+                        }
+                    }
+                });
+
+                this.target = closest;
+            }
+
+            getDistance(target) {
+                const dx = target.x - this.x;
+                const dy = target.y - this.y;
+                return Math.sqrt(dx * dx + dy * dy);
+            }
+
+            attack() {
+                if (this.stats.range > 50) {
+                    // Ranged attack - create projectile
+                    game.projectiles.push(new Projectile(this.x, this.y, this.target, this.stats.damage));
+                } else {
+                    // Melee attack
+                    this.dealDamage(this.target, this.stats.damage);
+                }
+            }
+
+            dealDamage(target, damage) {
+                target.health -= damage;
+                showDamage(target.x, target.y, damage);
+                
+                if (target.health <= 0) {
+                    if (target.element) {
+                        // It's a unit
+                        target.element.remove();
+                        const index = game.units.indexOf(target);
+                        if (index > -1) game.units.splice(index, 1);
+                    } else {
+                        // It's a tower
+                        updateTowerDisplay();
+                    }
+                }
+            }
+
+            takeDamage(damage) {
+                this.health -= damage;
+                showDamage(this.x, this.y, damage);
+                if (this.health <= 0) {
+                    this.element.remove();
+                    const index = game.units.indexOf(this);
+                    if (index > -1) game.units.splice(index, 1);
+                }
             }
         }
-    </script>
-</body>
-</html>
+
+        // Projectile class
+        class Projectile {
+            constructor(x, y, target, damage) {
+                this.x = x;
+                this.y = y;
+                this.target = target;
+                this.damage = damage;
+                this.speed = 5;
+                this.element = this.createElement();
+            }
+
+            createElement() {
+                const el = document.createElement('div');
+                el.className = 'projectile';
+                el.style.left = this.x + 'px';
+                el.style.top = this.y + 'px';
+                document.getElementById('battlefield').appendChild(el);
+                return el;
+            }
+
+            update() {
+                if (!this.target || this.target.health <= 0) {
+                    this.remove();
+                    return false;
+                }
+
+                const dx = this.target.x - this.x;
+                const dy = this.target.y - this.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist < 10) {
+                    // Hit target
+                    if (this.target.takeDamage) {
+                        this.target.takeDamage(this.damage);
+                    } else {
+                        this.target.health -= this.damage;
+                        showDamage(this.target.x, this.target.y, this.damage);
+                        updateTowerDisplay();
+                    }
+                    this.remove();
+                    return false;
+                }
+
+                // Move towards target
+                const angle = Math.atan2(dy, dx);
+                this.x += Math.cos(angle) * this.speed;
+                this.y += Ma
