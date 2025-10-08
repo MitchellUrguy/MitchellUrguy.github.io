@@ -646,4 +646,240 @@
                 // Move towards target
                 const angle = Math.atan2(dy, dx);
                 this.x += Math.cos(angle) * this.speed;
-                this.y += Ma
+                this.y += Math.sin(angle) * this.speed;
+
+                this.element.style.left = this.x + 'px';
+                this.element.style.top = this.y + 'px';
+                return true;
+            }
+
+            remove() {
+                this.element.remove();
+            }
+        }
+
+        // Show damage numbers
+        function showDamage(x, y, damage) {
+            const el = document.createElement('div');
+            el.className = 'damage-text';
+            el.textContent = '-' + damage;
+            el.style.left = x + 'px';
+            el.style.top = y + 'px';
+            document.getElementById('battlefield').appendChild(el);
+            setTimeout(() => el.remove(), 1000);
+        }
+
+        // Card selection
+        document.querySelectorAll('.card').forEach(card => {
+            card.addEventListener('click', function() {
+                const cost = parseInt(this.dataset.cost);
+                if (game.elixir >= cost) {
+                    document.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
+                    this.classList.add('selected');
+                    game.selectedCard = {
+                        type: this.dataset.type,
+                        cost: cost
+                    };
+                }
+            });
+        });
+
+        // Battlefield click for unit placement
+        document.getElementById('battlefield').addEventListener('click', function(e) {
+            if (!game.selectedCard || !game.gameRunning) return;
+            
+            const rect = this.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            // Only allow placement in bottom half for player
+            if (y > 250) {
+                if (game.selectedCard.type === 'fireball') {
+                    // Fireball spell - instant damage in area
+                    const spell = cardTypes.fireball;
+                    
+                    // Damage all enemies in radius
+                    game.units.forEach(unit => {
+                        if (unit.team === 'enemy') {
+                            const dist = Math.sqrt((unit.x - x) ** 2 + (unit.y - y) ** 2);
+                            if (dist < spell.radius) {
+                                unit.takeDamage(spell.damage);
+                            }
+                        }
+                    });
+                    
+                    // Check towers
+                    for (let key in game.towers.enemy) {
+                        const tower = game.towers.enemy[key];
+                        const dist = Math.sqrt((tower.x - x) ** 2 + (tower.y - y) ** 2);
+                        if (dist < spell.radius && tower.health > 0) {
+                            tower.health -= spell.damage;
+                            showDamage(tower.x, tower.y, spell.damage);
+                            updateTowerDisplay();
+                        }
+                    }
+                    
+                    // Visual effect
+                    const explosion = document.createElement('div');
+                    explosion.style.position = 'absolute';
+                    explosion.style.left = x - 40 + 'px';
+                    explosion.style.top = y - 40 + 'px';
+                    explosion.style.width = '80px';
+                    explosion.style.height = '80px';
+                    explosion.style.borderRadius = '50%';
+                    explosion.style.background = 'radial-gradient(circle, rgba(255,100,0,0.8), transparent)';
+                    explosion.style.animation = 'damageFloat 0.5s ease-out forwards';
+                    this.appendChild(explosion);
+                    setTimeout(() => explosion.remove(), 500);
+                } else {
+                    // Spawn unit
+                    game.units.push(new Unit(game.selectedCard.type, x, y, 'player'));
+                }
+                
+                game.elixir -= game.selectedCard.cost;
+                updateElixir();
+                
+                // Clear selection
+                document.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
+                game.selectedCard = null;
+            }
+        });
+
+        // Update elixir display
+        function updateElixir() {
+            const fillPercent = (game.elixir / game.maxElixir) * 100;
+            document.getElementById('elixirFill').style.width = fillPercent + '%';
+            document.getElementById('elixirText').textContent = Math.floor(game.elixir) + ' / ' + game.maxElixir;
+            
+            // Update card availability
+            document.querySelectorAll('.card').forEach(card => {
+                const cost = parseInt(card.dataset.cost);
+                if (game.elixir >= cost) {
+                    card.classList.remove('disabled');
+                } else {
+                    card.classList.add('disabled');
+                }
+            });
+        }
+
+        // Update tower display
+        function updateTowerDisplay() {
+            // Player towers
+            updateTowerElement('playerKing', game.towers.player.king);
+            updateTowerElement('playerLeft', game.towers.player.left);
+            updateTowerElement('playerRight', game.towers.player.right);
+            
+            // Enemy towers
+            updateTowerElement('enemyKing', game.towers.enemy.king);
+            updateTowerElement('enemyLeft', game.towers.enemy.left);
+            updateTowerElement('enemyRight', game.towers.enemy.right);
+            
+            checkGameOver();
+        }
+
+        function updateTowerElement(id, tower) {
+            const el = document.getElementById(id);
+            el.querySelector('.tower-health').textContent = Math.max(0, Math.ceil(tower.health));
+            if (tower.health <= 0) {
+                el.classList.add('destroyed');
+            }
+        }
+
+        // Check game over
+        function checkGameOver() {
+            if (!game.gameRunning) return;
+            
+            if (game.towers.player.king.health <= 0) {
+                endGame('You Lose!');
+            } else if (game.towers.enemy.king.health <= 0) {
+                endGame('You Win!');
+            }
+        }
+
+        function endGame(result) {
+            game.gameRunning = false;
+            document.getElementById('gameResult').textContent = result;
+            document.getElementById('gameOver').style.display = 'block';
+        }
+
+        // Reset game
+        function resetGame() {
+            location.reload();
+        }
+
+        // Update timer
+        function updateTimer() {
+            if (!game.gameRunning) return;
+            
+            game.gameTime--;
+            const minutes = Math.floor(game.gameTime / 60);
+            const seconds = game.gameTime % 60;
+            document.getElementById('timer').textContent = 
+                minutes + ':' + (seconds < 10 ? '0' : '') + seconds;
+            
+            if (game.gameTime <= 0) {
+                // Time's up - determine winner by tower health
+                const playerHealth = game.towers.player.king.health + 
+                                    game.towers.player.left.health + 
+                                    game.towers.player.right.health;
+                const enemyHealth = game.towers.enemy.king.health + 
+                                   game.towers.enemy.left.health + 
+                                   game.towers.enemy.right.health;
+                
+                if (playerHealth > enemyHealth) {
+                    endGame('You Win!');
+                } else if (enemyHealth > playerHealth) {
+                    endGame('You Lose!');
+                } else {
+                    endGame('Draw!');
+                }
+            }
+        }
+
+        // AI opponent
+        function aiPlay() {
+            if (!game.gameRunning) return;
+            
+            // Simple AI that spawns random units
+            if (Math.random() < 0.3) { // 30% chance per second
+                const availableCards = ['knight', 'archer', 'wizard', 'giant'];
+                const randomCard = availableCards[Math.floor(Math.random() * availableCards.length)];
+                const cost = parseInt(document.querySelector(`[data-type="${randomCard}"]`).dataset.cost);
+                
+                if (game.towers.enemy.king.health > 0) { // AI has elixir (simplified)
+                    const x = 80 + Math.random() * 240;
+                    const y = 50 + Math.random() * 100;
+                    game.units.push(new Unit(randomCard, x, y, 'enemy'));
+                }
+            }
+        }
+
+        // Main game loop
+        function gameLoop() {
+            if (!game.gameRunning) return;
+            
+            // Regenerate elixir
+            if (game.elixir < game.maxElixir) {
+                game.elixir += game.elixirRate / 60; // 60 FPS
+                game.elixir = Math.min(game.elixir, game.maxElixir);
+                updateElixir();
+            }
+            
+            // Update units
+            game.units.forEach(unit => unit.update());
+            
+            // Update projectiles
+            game.projectiles = game.projectiles.filter(p => p.update());
+            
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Initialize game
+        updateElixir();
+        updateTowerDisplay();
+        gameLoop();
+        setInterval(updateTimer, 1000);
+        setInterval(aiPlay, 1000);
+    </script>
+</body>
+</html>
