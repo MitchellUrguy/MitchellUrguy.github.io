@@ -5,32 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Clash Royale MVP</title>
     <style>
-        /* River and bridges */
-        #river {
-            position: absolute;
-            left: 0;
-            top: 245px;
-            width: 100%;
-            height: 30px;
-            background: linear-gradient(to bottom, #4fc3f7 60%, #1976d2 100%);
-            z-index: 2;
-        }
-        .bridge {
-            position: absolute;
-            width: 60px;
-            height: 30px;
-            top: 245px;
-            background: #bfa76f;
-            border-radius: 8px;
-            z-index: 3;
-            border: 2px solid #8d6e3f;
-        }
-        #bridge-left {
-            left: 70px;
-        }
-        #bridge-right {
-            right: 70px;
-        }
         * {
             margin: 0;
             padding: 0;
@@ -358,9 +332,6 @@
 <body>
     <div id="gameContainer">
         <div id="battlefield">
-            <div id="river"></div>
-            <div class="bridge" id="bridge-left"></div>
-            <div class="bridge" id="bridge-right"></div>
             <div class="lane left"></div>
             <div class="lane right"></div>
             
@@ -417,11 +388,6 @@
                     <span class="card-name">Wizard</span>
                     <span class="card-cost">5</span>
                 </div>
-                <div class="card" data-type="minion" data-cost="3">
-                    <span class="card-icon">🦋</span>
-                    <span class="card-name">Minion</span>
-                    <span class="card-cost">3</span>
-                </div>
                 <div class="card" data-type="giant" data-cost="7">
                     <span class="card-icon">👹</span>
                     <span class="card-name">Giant</span>
@@ -474,8 +440,7 @@
                 speed: 1,
                 range: 40,
                 attackSpeed: 1000,
-                icon: '⚔️',
-                flying: false
+                icon: '⚔️'
             },
             archer: {
                 health: 150,
@@ -483,8 +448,7 @@
                 speed: 1.5,
                 range: 120,
                 attackSpeed: 800,
-                icon: '🏹',
-                flying: false
+                icon: '🏹'
             },
             wizard: {
                 health: 200,
@@ -492,8 +456,7 @@
                 speed: 1,
                 range: 100,
                 attackSpeed: 1500,
-                icon: '🧙',
-                flying: false
+                icon: '🧙'
             },
             giant: {
                 health: 800,
@@ -501,36 +464,12 @@
                 speed: 0.5,
                 range: 40,
                 attackSpeed: 2000,
-                icon: '👹',
-                flying: false
-            },
-            minion: {
-                health: 90,
-                damage: 40,
-                speed: 2,
-                range: 40,
-                attackSpeed: 900,
-                icon: '🦋',
-                flying: true
+                icon: '👹'
             },
             fireball: {
                 damage: 200,
                 radius: 80,
                 icon: '🔥'
-            }
-        };
-
-        // Tower attack stats
-        const towerStats = {
-            normal: {
-                damage: 60,
-                range: 120,
-                attackSpeed: 1200
-            },
-            king: {
-                damage: 120,
-                range: 140,
-                attackSpeed: 1100
             }
         };
 
@@ -559,34 +498,13 @@
             }
 
             update() {
-                // Only find a new target if there is no target or the current target is dead/destroyed
                 if (!this.target || this.target.health <= 0) {
                     this.findTarget();
                 }
 
                 if (this.target) {
                     const dist = this.getDistance(this.target);
-                    const isFlying = this.stats.flying === true;
-                    // River y: 245 to 275, bridges at x: 70-130 and 270-330
-                    let canCrossRiver = false;
-                    if (isFlying) {
-                        canCrossRiver = true;
-                    } else {
-                        // Check if unit is on a bridge when crossing river
-                        // If moving from one side of river to the other, must be on bridge
-                        const nextX = this.x + Math.cos(Math.atan2(this.target.y - this.y, this.target.x - this.x)) * this.stats.speed;
-                        const nextY = this.y + Math.sin(Math.atan2(this.target.y - this.y, this.target.x - this.x)) * this.stats.speed;
-                        // If crossing river
-                        if ((this.y < 245 && nextY >= 245) || (this.y > 275 && nextY <= 275)) {
-                            // Check if x is within bridge bounds
-                            if ((this.x >= 70 && this.x <= 130) || (this.x >= 270 && this.x <= 330)) {
-                                canCrossRiver = true;
-                            }
-                        } else {
-                            canCrossRiver = true;
-                        }
-                    }
-
+                    
                     if (dist <= this.stats.range) {
                         // Attack
                         const now = Date.now();
@@ -594,13 +512,12 @@
                             this.attack();
                             this.lastAttack = now;
                         }
-                    } else if (canCrossRiver) {
+                    } else {
                         // Move towards target
                         const angle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
                         this.x += Math.cos(angle) * this.stats.speed;
                         this.y += Math.sin(angle) * this.stats.speed;
                     }
-                    // else: blocked by river, do not move
                 }
 
                 this.element.style.left = this.x - 15 + 'px';
@@ -609,46 +526,33 @@
             }
 
             findTarget() {
-                // Find the closest valid target (towers or enemy units)
                 const enemyTeam = this.team === 'player' ? 'enemy' : 'player';
                 const towers = game.towers[enemyTeam];
                 let minDist = Infinity;
                 let closest = null;
 
-                if (this.type === 'giant') {
-                    // Giant only targets buildings (towers)
-                    for (let key in towers) {
-                        if (towers[key].health > 0) {
-                            const dist = this.getDistance(towers[key]);
-                            if (dist < minDist) {
-                                minDist = dist;
-                                closest = towers[key];
-                            }
+                // Check towers
+                for (let key in towers) {
+                    if (towers[key].health > 0) {
+                        const dist = this.getDistance(towers[key]);
+                        if (dist < minDist) {
+                            minDist = dist;
+                            closest = towers[key];
                         }
                     }
-                } else {
-                    // Other units: towers first, then enemy units
-                    for (let key in towers) {
-                        if (towers[key].health > 0) {
-                            const dist = this.getDistance(towers[key]);
-                            if (dist < minDist) {
-                                minDist = dist;
-                                closest = towers[key];
-                            }
-                        }
-                    }
-                    game.units.forEach(unit => {
-                        if (unit.team !== this.team && unit.health > 0) {
-                            // Only ranged units can target flying units
-                            if (unit.stats.flying && this.stats.range <= 50) return;
-                            const dist = this.getDistance(unit);
-                            if (dist < minDist) {
-                                minDist = dist;
-                                closest = unit;
-                            }
-                        }
-                    });
                 }
+
+                // Check enemy units
+                game.units.forEach(unit => {
+                    if (unit.team !== this.team && unit.health > 0) {
+                        const dist = this.getDistance(unit);
+                        if (dist < minDist) {
+                            minDist = dist;
+                            closest = unit;
+                        }
+                    }
+                });
+
                 this.target = closest;
             }
 
@@ -754,87 +658,6 @@
             }
         }
 
-        // Tower class
-        class Tower {
-            constructor(team, key, data) {
-                this.team = team;
-                this.key = key;
-                this.x = data.x;
-                this.y = data.y;
-                this.health = data.health;
-                this.maxHealth = data.maxHealth;
-                this.isKing = key === 'king';
-                this.attackEnabled = !this.isKing; // King tower starts disabled
-                this.lastAttack = 0;
-                this.target = null;
-            }
-
-            update() {
-                // Enable king tower if any side tower destroyed
-                if (this.isKing && !this.attackEnabled) {
-                    const towers = game.towers[this.team];
-                    if (towers.left.health <= 0 || towers.right.health <= 0) {
-                        this.attackEnabled = true;
-                    }
-                }
-                if (!this.attackEnabled || this.health <= 0) return;
-
-                // Find target if needed
-                if (!this.target || this.target.health <= 0 || this.getDistance(this.target) > this.getStats().range) {
-                    this.target = this.findTarget();
-                }
-                if (this.target && this.target.health > 0) {
-                    const now = Date.now();
-                    if (now - this.lastAttack > this.getStats().attackSpeed) {
-                        this.attack();
-                        this.lastAttack = now;
-                    }
-                }
-            }
-
-            findTarget() {
-                // Attack closest enemy unit in range
-                let minDist = Infinity, closest = null;
-                game.units.forEach(unit => {
-                    if (unit.team !== this.team && unit.health > 0) {
-                        // Only target ground units if not king or if king, can target both
-                        if (!this.isKing && unit.stats.flying) return;
-                        const dist = this.getDistance(unit);
-                        if (dist < this.getStats().range && dist < minDist) {
-                            minDist = dist;
-                            closest = unit;
-                        }
-                    }
-                });
-                return closest;
-            }
-
-            getDistance(target) {
-                const dx = target.x - this.x;
-                const dy = target.y - this.y;
-                return Math.sqrt(dx * dx + dy * dy);
-            }
-
-            getStats() {
-                return this.isKing ? towerStats.king : towerStats.normal;
-            }
-
-            attack() {
-                // Ranged attack (projectile)
-                game.projectiles.push(new Projectile(this.x, this.y, this.target, this.getStats().damage));
-            }
-        }
-
-        // Initialize towers as Tower instances
-        function initTowers() {
-            for (const team of ['player', 'enemy']) {
-                for (const key of ['king', 'left', 'right']) {
-                    const t = game.towers[team][key];
-                    game.towers[team][key] = new Tower(team, key, t);
-                }
-            }
-        }
-
         // Show damage numbers
         function showDamage(x, y, damage) {
             const el = document.createElement('div');
@@ -864,14 +687,17 @@
         // Battlefield click for unit placement
         document.getElementById('battlefield').addEventListener('click', function(e) {
             if (!game.selectedCard || !game.gameRunning) return;
+            
             const rect = this.getBoundingClientRect();
             const x = e.clientX - rect.left;
             const y = e.clientY - rect.top;
+            
             // Only allow placement in bottom half for player
             if (y > 250) {
                 if (game.selectedCard.type === 'fireball') {
                     // Fireball spell - instant damage in area
                     const spell = cardTypes.fireball;
+                    
                     // Damage all enemies in radius
                     game.units.forEach(unit => {
                         if (unit.team === 'enemy') {
@@ -881,6 +707,7 @@
                             }
                         }
                     });
+                    
                     // Check towers
                     for (let key in game.towers.enemy) {
                         const tower = game.towers.enemy[key];
@@ -891,6 +718,7 @@
                             updateTowerDisplay();
                         }
                     }
+                    
                     // Visual effect
                     const explosion = document.createElement('div');
                     explosion.style.position = 'absolute';
@@ -903,21 +731,62 @@
                     explosion.style.animation = 'damageFloat 0.5s ease-out forwards';
                     this.appendChild(explosion);
                     setTimeout(() => explosion.remove(), 500);
-                } else if (game.selectedCard.type === 'minion') {
-                    // Spawn 3 minions in a small spread
-                    for (let i = 0; i < 3; i++) {
-                        const angle = (-10 + i * 10) * Math.PI / 180;
-                        const mx = x + Math.cos(angle) * 15;
-                        const my = y + Math.sin(angle) * 15;
-                        game.units.push(new Unit('minion', mx, my, 'player'));
-                    }
                 } else {
                     // Spawn unit
                     game.units.push(new Unit(game.selectedCard.type, x, y, 'player'));
                 }
+                
                 game.elixir -= game.selectedCard.cost;
                 updateElixir();
+                
+                // Clear selection
+                document.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
+                game.selectedCard = null;
             }
+        });
+
+        // Update elixir display
+        function updateElixir() {
+            const fillPercent = (game.elixir / game.maxElixir) * 100;
+            document.getElementById('elixirFill').style.width = fillPercent + '%';
+            document.getElementById('elixirText').textContent = Math.floor(game.elixir) + ' / ' + game.maxElixir;
+            
+            // Update card availability
+            document.querySelectorAll('.card').forEach(card => {
+                const cost = parseInt(card.dataset.cost);
+                if (game.elixir >= cost) {
+                    card.classList.remove('disabled');
+                } else {
+                    card.classList.add('disabled');
+                }
+            });
+        }
+
+        // Update tower display
+        function updateTowerDisplay() {
+            // Player towers
+            updateTowerElement('playerKing', game.towers.player.king);
+            updateTowerElement('playerLeft', game.towers.player.left);
+            updateTowerElement('playerRight', game.towers.player.right);
+            
+            // Enemy towers
+            updateTowerElement('enemyKing', game.towers.enemy.king);
+            updateTowerElement('enemyLeft', game.towers.enemy.left);
+            updateTowerElement('enemyRight', game.towers.enemy.right);
+            
+            checkGameOver();
+        }
+
+        function updateTowerElement(id, tower) {
+            const el = document.getElementById(id);
+            el.querySelector('.tower-health').textContent = Math.max(0, Math.ceil(tower.health));
+            if (tower.health <= 0) {
+                el.classList.add('destroyed');
+            }
+        }
+
+        // Check game over
+        function checkGameOver() {
             if (!game.gameRunning) return;
             
             if (game.towers.player.king.health <= 0) {
@@ -925,7 +794,7 @@
             } else if (game.towers.enemy.king.health <= 0) {
                 endGame('You Win!');
             }
-        });
+        }
 
         function endGame(result) {
             game.gameRunning = false;
@@ -988,34 +857,26 @@
         // Main game loop
         function gameLoop() {
             if (!game.gameRunning) return;
-
+            
             // Regenerate elixir
             if (game.elixir < game.maxElixir) {
                 game.elixir += game.elixirRate / 60; // 60 FPS
                 game.elixir = Math.min(game.elixir, game.maxElixir);
                 updateElixir();
             }
-
-            // Update towers (attacks)
-            for (const team of ['player', 'enemy']) {
-                for (const key of ['king', 'left', 'right']) {
-                    game.towers[team][key].update();
-                }
-            }
-
+            
             // Update units
             game.units.forEach(unit => unit.update());
-
+            
             // Update projectiles
             game.projectiles = game.projectiles.filter(p => p.update());
-
+            
             requestAnimationFrame(gameLoop);
         }
 
         // Initialize game
         updateElixir();
         updateTowerDisplay();
-        initTowers();
         gameLoop();
         setInterval(updateTimer, 1000);
         setInterval(aiPlay, 1000);
