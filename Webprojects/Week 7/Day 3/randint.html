@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Random Number generator</title>
+</head>
+<body>
+    <h1>Random Number Generator</h1>
+    <button onclick="generateRandomNumber()">Randint</button>
+    <p id="result"></p>
+    <script>
+
+        function generateRandomNumber() {
+            const randomNumber = Math.floor(Math.random() * 100) + 1;
+            document.getElementById('result').innerText = `Random Number: ${randomNumber}`;
+        }
+    </script>
+
+</body>
+<body>
+    <h1>Average</h1>
+    <button onclick = "calculateAverage()">Average</button>
+    <p id="avg"></p>
+    <script>
+        function calculateAverage() {
+            let tally = 0;
+            let count = 0;
+            while (tally < 10) {
+                randomNumber = Math.floor(Math.random() * 100) + 1;
+                count = randomNumber + count;
+                tally = tally + 1;
+            }
+            document.getElementById('avg').innerText = count / (tally-1);
+            
+        }
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Random Number</title>
+</head>
+<body>
+
+    <button id="toggle-button">Start</button>
+    <div id="number-display">0</div> <!-- The number will cycle here -->
+
+    <script>
+        let intervalId = null; // Store the interval ID.
+        const numberDisplay = document.getElementById('number-display');
+        const toggleButton = document.getElementById('toggle-button');
+
+        // Function to generate and display a new random number.
+        function generateRandomNumber() {
+            // Generate a random integer between 0 and 99.
+            const randomNumber = Math.floor(Math.random() * 100); 
+            numberDisplay.textContent = randomNumber;
+        }
+
+        // Add a click event listener to the button.
+        toggleButton.addEventListener('click', () => {
+            // Check if an interval is currently active.
+            if (intervalId) {
+                clearInterval(intervalId); // Stop the cycling.
+                intervalId = null; // Reset the ID.
+                toggleButton.textContent = 'Start';
+            } else {
+                intervalId = setInterval(generateRandomNumber, 100); 
+                toggleButton.textContent = 'Stop';
+            }
+        });
+    </script>
+
+</body>
+</html>
