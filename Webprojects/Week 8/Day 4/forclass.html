@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Class marks</title>
+</head>
+<body>
+    <form id="marksForm">
+        <label>
+            <input type="radio" name="gender" value="Male" /> Male
+        </label>
+        <label>
+            <input type="radio" name="gender" value="Female" /> Female
+        </label>
+        <input type="text" id="marks" placeholder="Enter marks" />
+    </form>
+    <button onclick="submitForm()">Submit</button>
+    <button onclick="calculateAverages()">Calculate Averages</button>
+
+    <div id="result"></div>
+
+    <script>
+        let totalMarksM = 0;
+        let totalMarksF = 0;
+        let entryCountM = 0;
+        let entryCountF = 0;
+        for(z=0;z<10;z++){
+            document.write(z);
+            document.write("<br>");
+    
+        function submitForm() {
+            const genderRadios = document.getElementsByName('gender');
+            let selectedGender = null;
+
+            
+            for (const radio of genderRadios) {
+                if (radio.checked) {
+                    selectedGender = radio.value;
+                    break;
+                }
+            }
+
+            if (!selectedGender) {
+                alert('Please select a gender.');
+                return;
+            }
+
+            const marksInput = document.getElementById('marks');
+            const marks = parseFloat(marksInput.value);
+
+            if (isNaN(marks) || marks < 0) {
+                alert('Please enter a valid positive number for marks.');
+                return;
+            }
+
+            if (selectedGender === 'Male') {
+                totalMarksM += marks;
+                entryCountM++;
+            } else if (selectedGender === 'Female') {
+                totalMarksF += marks;
+                entryCountF++;
+            }
+
+            marksInput.value = '';
+        }
+    }
+
+        function calculateAverages() {
+            const resultDiv = document.getElementById('result');
+
+            const avgM = entryCountM ? (totalMarksM / entryCountM).toFixed(2) : 'No data';
+            const avgF = entryCountF ? (totalMarksF / entryCountF).toFixed(2) : 'No data';
+
+            resultDiv.innerHTML = `
+                <p>Average marks for Male: ${avgM}</p>
+                <p>Average marks for Female: ${avgF}</p>
+            `;
+        }
+    </script>
+</body>
+</html>
