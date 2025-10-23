@@ -1,82 +1,70 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Class marks</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Class Marks</title>
 </head>
 <body>
-    <form id="marksForm">
-        <label>
-            <input type="radio" name="gender" value="Male" /> Male
-        </label>
-        <label>
-            <input type="radio" name="gender" value="Female" /> Female
-        </label>
-        <input type="text" id="marks" placeholder="Enter marks" />
-    </form>
-    <button onclick="submitForm()">Submit</button>
-    <button onclick="calculateAverages()">Calculate Averages</button>
 
-    <div id="result"></div>
+  <form id="marksForm">
+    <label><input type="radio" name="gender" value="Male"> Male</label>
+    <label><input type="radio" name="gender" value="Female"> Female</label>
+    <input type="text" id="marks" placeholder="Enter marks">
+  </form>
 
-    <script>
-        let totalMarksM = 0;
-        let totalMarksF = 0;
-        let entryCountM = 0;
-        let entryCountF = 0;
-        for(z=0;z<10;z++){
-            document.write(z);
-            document.write("<br>");
-    
-        function submitForm() {
-            const genderRadios = document.getElementsByName('gender');
-            let selectedGender = null;
+  <button onclick="submitForm()">Submit</button>
+  <button onclick="calculateAverages()">Calculate Averages</button>
 
-            
-            for (const radio of genderRadios) {
-                if (radio.checked) {
-                    selectedGender = radio.value;
-                    break;
-                }
-            }
+  <p id="countDisplay">Entries: 0 / 10</p>
+  <div id="result"></div>
 
-            if (!selectedGender) {
-                alert('Please select a gender.');
-                return;
-            }
+  <script>
+    let totalMarksM = 0;
+    let totalMarksF = 0;
+    let entryCountM = 0;
+    let entryCountF = 0;
+    let totalEntries = 0;
 
-            const marksInput = document.getElementById('marks');
-            const marks = parseFloat(marksInput.value);
+    function submitForm() {
+      if (totalEntries >= 10) {
+        alert("Only enter marks for 10 students");
+        return;
+      }
 
-            if (isNaN(marks) || marks < 0) {
-                alert('Please enter a valid positive number for marks.');
-                return;
-            }
+      const gender = document.querySelector('input[name="gender"]:checked');
+      const marks = parseFloat(document.getElementById('marks').value);
 
-            if (selectedGender === 'Male') {
-                totalMarksM += marks;
-                entryCountM++;
-            } else if (selectedGender === 'Female') {
-                totalMarksF += marks;
-                entryCountF++;
-            }
+      if (gender.value === 'Male') {
+        totalMarksM += marks;
+        entryCountM++;
+      } else {
+        totalMarksF += marks;
+        entryCountF++;
+      }
 
-            marksInput.value = '';
-        }
+      totalEntries++;
+
+      document.getElementById('marks').value = '';
+      gender.checked = false;
+
+      document.getElementById('countDisplay').textContent = `Entries: ${totalEntries} / 10`;
     }
 
-        function calculateAverages() {
-            const resultDiv = document.getElementById('result');
+    function calculateAverages() {
+      if (totalEntries < 10) {
+        alert("Please enter marks for all 10 students first.");
+        return;
+      }
 
-            const avgM = entryCountM ? (totalMarksM / entryCountM).toFixed(2) : 'No data';
-            const avgF = entryCountF ? (totalMarksF / entryCountF).toFixed(2) : 'No data';
+      const avgM = entryCountM ? (totalMarksM / entryCountM).toFixed(2) : 'No data';
+      const avgF = entryCountF ? (totalMarksF / entryCountF).toFixed(2) : 'No data';
 
-            resultDiv.innerHTML = `
-                <p>Average marks for Male: ${avgM}</p>
-                <p>Average marks for Female: ${avgF}</p>
-            `;
-        }
-    </script>
+      document.getElementById('result').innerHTML = `
+        <p>Average marks for Male: ${avgM}</p>
+        <p>Average marks for Female: ${avgF}</p>
+      `;
+    }
+  </script>
 </body>
 </html>
