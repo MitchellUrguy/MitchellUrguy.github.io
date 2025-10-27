@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <script>
+    async function readListToArray(file) {
+      try {
+        const res = await fetch(file);
+        if (!res.ok) throw new Error(res.status + ' ' + res.statusText);
+        const text = await res.text();
+
+        // Split into lines, trim, remove empty lines
+        let lines = text.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+
+        // If there's one line and it contains commas, treat it as CSV-like
+        let arr;
+        if (lines.length === 1 && lines[0].includes(',')) {
+          arr = lines[0].split(',').map(s => s.trim()).filter(Boolean);
+        } else {
+          arr = lines;
+        }
+
+        console.log('Array from file:', arr);
+
+        // Display results on the page
+        const out = document.createElement('div');
+        out.innerHTML = '<h3>Array from ' + file + '</h3>';
+        const pre = document.createElement('pre');
+        pre.textContent = JSON.stringify(arr, null, 2);
+        out.appendChild(pre);
+
+        // also show as a simple list
+        const ul = document.createElement('ul');
+        arr.forEach(item => {
+          const li = document.createElement('li');
+          li.textContent = item;
+          ul.appendChild(li);
+        });
+        out.appendChild(ul);
+
+        document.body.appendChild(out);
+
+        return arr;
+      } catch (err) {
+        console.error('Failed to load file:', err);
+        const p = document.createElement('p');
+        p.textContent = 'Failed to load file: ' + err.message;
+        document.body.appendChild(p);
+        return [];
+      }
+    }
+
+    // Usage example
+    readListToArray('list.txt').then(arr => {
+      // arr is the array created from list.txt
+      // further processing can go here
+    });
+    </script>
+</body>
+</html>
