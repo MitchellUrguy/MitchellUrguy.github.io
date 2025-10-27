@@ -1,106 +1,42 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>List → Array</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>List → Array</title>
 </head>
 <body>
-    <h1>List → Array</h1>
-    <div id="output"></div>
+  <div id="output"></div>
 
-    <script>
-    // New robust loader: try multiple paths, then fall back to file input
-    async function loadListWithFallback(paths) {
-      const out = document.getElementById('output');
-      out.innerHTML = '<p>Attempting to load file...</p>';
+  <script>
+  (async () => {
+    const out = document.getElementById('output');
 
-      for (const p of paths) {
-        try {
-          const res = await fetch(p);
-          if (!res.ok) throw new Error(res.status + ' ' + res.statusText);
-          const text = await res.text();
-          return parseTextToArray(text);
-        } catch (err) {
-          console.warn('Fetch failed for', p, err);
-        }
-      }
+    try {
+      const res = await fetch('list.txt'); // always load list.txt from same folder
+      if (!res.ok) throw new Error(res.status + ' ' + res.statusText);
+      const text = await res.text();
 
-      // All fetch attempts failed — provide a file input as fallback
-      out.innerHTML = '';
-      const msg = document.createElement('p');
-      msg.innerHTML = 'Could not load list.txt automatically. If you are opening this file via <code>file://</code>, browsers often block fetch. You can either run a local server or upload the file manually below.';
-      out.appendChild(msg);
-
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = '.txt';
-      out.appendChild(input);
-
-      const note = document.createElement('p');
-      note.textContent = 'Select your list.txt file:';
-      out.insertBefore(note, input);
-
-      return new Promise(resolve => {
-        input.addEventListener('change', (e) => {
-          const file = e.target.files[0];
-          if (!file) return resolve([]);
-          const reader = new FileReader();
-          reader.onload = () => {
-            const arr = parseTextToArray(String(reader.result));
-            resolve(arr);
-          };
-          reader.onerror = () => {
-            out.insertAdjacentHTML('beforeend', '<p style="color:red">Failed to read file.</p>');
-            resolve([]);
-          };
-          reader.readAsText(file);
+      // parse: split lines, then split columns by tab or comma, trim, remove empties
+      const items = [];
+      text.split(/\r?\n/).forEach(line => {
+        if (!line) return;
+        line.split(/\t|,/).forEach(part => {
+          part = (part || '').trim().replace(/,+$/, '');
+          if (part) items.push(part);
         });
       });
-    }
 
-    function parseTextToArray(text) {
-      // Split into lines, then split each line by comma or tab to get individual items.
-      const lines = String(text).split(/\r?\n/);
-      let items = [];
-      for (const line of lines) {
-        if (!line) continue;
-        // Split on tab or comma
-        const parts = line.split(/\t|,/);
-        for (let p of parts) {
-          if (!p) continue;
-          p = p.trim();
-          if (!p) continue;
-          p = p.replace(/,+$/, '').trim();
-          if (p) items.push(p);
-        }
-      }
-      // Dedupe while preserving order
+      // dedupe while preserving order
       const seen = new Set();
-      return items.filter(i => {
+      const arr = items.filter(i => {
         if (seen.has(i)) return false;
         seen.add(i);
         return true;
       });
-    }
 
-    (async () => {
-      const candidatePaths = [
-        './list.txt',
-        'list.txt',
-        './Webprojects/Week 9/Day 1/list.txt',
-        'Webprojects/Week 9/Day 1/list.txt'
-      ];
-
-      const arr = await loadListWithFallback(candidatePaths);
-
-      // Render results (same UI as before)
-      const out = document.getElementById('output');
+      // render: JSON, single comma line, and list (only the words)
       out.innerHTML = '';
-      const title = document.createElement('h2');
-      title.textContent = 'Array (' + arr.length + ' items)';
-      out.appendChild(title);
-
       const pre = document.createElement('pre');
       pre.textContent = JSON.stringify(arr, null, 2);
       out.appendChild(pre);
@@ -110,15 +46,17 @@
       out.appendChild(line);
 
       const ul = document.createElement('ul');
-      for (const item of arr) {
+      arr.forEach(item => {
         const li = document.createElement('li');
         li.textContent = item;
         ul.appendChild(li);
-      }
+      });
       out.appendChild(ul);
-
-      console.log('Array from file:', arr);
-    })();
-    </script>
+    } catch (err) {
+      out.textContent = 'Failed to load list.txt: ' + err.message;
+      console.error(err);
+    }
+  })();
+  </script>
 </body>
 </html>
