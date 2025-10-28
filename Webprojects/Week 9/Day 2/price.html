@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+<h1>Price List</h1>
+
+    <script>
+       let price = [12.98,14.20,5.86,9.25,14.70];
+       let tax = price.map(function(value){
+        taxed = value * 1.13;
+        return taxed.toFixed(2);
+       
+       });
+      for (let x = 0; x < tax.length; x++) {
+            document.write("$" + tax[x] + "<br>");
+        }
+    </script>
+</body>
+</html>
