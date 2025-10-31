@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <script>
+        let name = ["kash", "john", "mike", "sara", "linda", "cohen", "david"];
+
+        for (let i = 0; i < name.length; i++) {
+            document.write(name[i] + "<br>");
+        }
+        document.write("<br><br>");
+        for(let i = 0; i < name.length; i++){
+            name[i] = name[i].charAt(0).toUpperCase() + name[i].slice(1);
+    
+            document.write(name[i] + "<br>");
+        }
+    </script>
+</body>
+</html>
