@@ -143,6 +143,27 @@
         render();
     }
 
+    // play click sound on button press
+    const clickSound = new Audio('click.mp3'); // place your click.mp3 in the same folder
+    clickSound.preload = 'auto';
+
+    function playClick() {
+        try {
+            clickSound.currentTime = 0;
+            clickSound.play();
+        } catch (e) {
+            // ignore play errors
+        }
+    }
+
+    // ensure sound plays before inline handlers: use capture phase on wrapper
+    const wrapperEl = document.querySelector('.wrapper');
+    if (wrapperEl) {
+        wrapperEl.addEventListener('click', (e) => {
+            if (e.target && e.target.tagName === 'BUTTON') playClick();
+        }, true); // useCapture = true
+    }
+
     render();
 </script>
 </body>
