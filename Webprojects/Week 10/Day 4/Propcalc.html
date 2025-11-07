@@ -6,97 +6,150 @@
     <title>Calculator</title>
 </head>
 <body>
-<style>
-    .greybox {
-        width: 500px;
-        height: 800px;
-        background-color: grey;
-        position : absolute;
-        left: 50%;
-        top: 50%;
-        transform: translate(-50%, -50%);
-        z-index: 1;
-    }
-    .num1 {
-        width: 70px;
-        height: 50px;
-        background-color: rgb(255, 85, 6);
-        position : absolute;
-        left: 35%;
-        top: 85%;
-        transform: translate(-50%, -50%); 
-        z-index: 2;
-        text-align: center;
-        font-size: 24px;
-        line-height: 50px;
-        color: rgb(255, 255, 255);
+    <style>
+        .bum {
+            position: relative;
+            width: 50px;
+            height: 50px;
+            font-size: 20px;
+            margin: 5px;
+            background-color: lightgray;
+            z-index: 2;
 
-    }
-    .num3 {
-        width: 70px;
-        height: 50px;
-        background-color: rgb(255, 85, 6);
-        position : absolute;
-        left: 50%;
-        top: 85%;
-        transform: translate(-50%, -50%);
-        z-index: 2;
-        text-align: center;
-        font-size: 24px;
-        line-height: 50px;
-        color: rgb(255, 255, 255);
+            
+        }
+        .bum:hover {
+            background-color: gray;
+            color: white;
+            z-index: 2;
+        }
+        .dsp {
+            position: relative;
+            width: 310px;
+            height: 50px;
+            font-size: 24px;
+            background-color: rgb(174, 181, 184);
+            text-align: right;
+            padding: 10px;
+            box-sizing: border-box;
+            z-index: 3;
+        }
+        .b2 {
+            position: relative;
+            width: 50px;
+            height: 50px;
+            font-size: 20px;
+            margin: 5px;
+            background-color: greenyellow;
+            z-index: 2;
+        }
+        .b2:hover {
+            background-color: green;
+            color: white;
+            z-index: 2;
+        }
+        .greybox {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 320px;
+            height: 350px;
+            padding : 10px;
+            background-color: grey;
+            z-index: 0;
+        }
+        .wrapper {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            margin: auto;
+            margin-top: 50px;
+            z-index: 1;
+        }
+    </style>
+<div class = "wrapper">
+    <p class = "dsp" id="display">0</p>
+    <button class="bum" onclick="num7()">7</button>
+    <button class="bum" onclick="num8()">8</button>
+    <button class="bum" onclick="num9()">9</button>
+    <button class="b2" onclick="numdel()">Del</button>
+    <button class="b2" onclick="numAc()">Ac</button>
+    <br>
+    <button class="bum" onclick="num4()">4</button>
+    <button class="bum" onclick="num5()">5</button>
+    <button class="bum" onclick="num6()">6</button>
+    <button class="bum" onclick="multiply()">*</button>
+    <button class="bum" onclick="divide()">/</button>
+    <br>
 
-    }
-    .num2 {
-        width: 70px;
-        height: 50px;
-        background-color: rgb(255, 85, 6);
-        position : absolute;
-        left: 42.5%;
-        top: 85%;
-        transform: translate(-50%, -50%);
-        z-index: 2;
-        text-align: center;
-        font-size: 24px;
-        line-height: 50px;
-        color: rgb(255, 255, 255);
-    }
-    .num4 {
-        width: 70px;
-        height: 50px;
-        background-color: rgb(255, 85, 6);
-        position : absolute;
-        left: 57.5%;
-        top: 85%;
-        transform: translate(-50%, -50%);
-        z-index: 2;
-        text-align: center;
-        font-size: 24px;
-        line-height: 50px;
-        color: rgb(255, 255, 255);
-    }
-     .num5 {
-        width: 70px;
-        height: 50px;
-        background-color: rgb(255, 85, 6);
-        position : absolute;
-        left: 65%;
-        top: 85%;
-        transform: translate(-50%, -50%);
-        z-index: 2;
-          text-align: center;
-        font-size: 24px;
-        line-height: 50px;
-        color: rgb(255, 255, 255);
-    }
-</style>
-<div class="num1">0</div>
-<div class="num2">.</div>
-<div class="num3"></div>
-<div class="num4">Ans</div>
-<div class="num5">=</div>
-<div class="greybox"></div>
+    <button class="bum" onclick="num1()">1</button>
+    <button class="bum" onclick="num2()">2</button>
+    <button class="bum" onclick="num3()">3</button>
+    <button class="bum" onclick="add()">+</button>
+    <button class="bum" onclick="subtract()">-</button>
+    <br>
+    <button class="bum" onclick="num0()">0</button>
+    <button class="bum" onclick="decimal()">.</button>
+    <button class="bum" onclick="calculate()">=</button>
+    <div class="greybox"></div>
+</div>
 
+<script>
+    let expression = "";
 
+    function render() {
+        document.getElementById("display").innerText = expression || "0";
+    }
+
+    function append(value) {
+        expression += value;
+        render();
+    }
+
+    function num0() { append("0"); }
+    function num1() { append("1"); }
+    function num2() { append("2"); }
+    function num3() { append("3"); }
+    function num4() { append("4"); }
+    function num5() { append("5"); }
+    function num6() { append("6"); }
+    function num7() { append("7"); }
+    function num8() { append("8"); }
+    function num9() { append("9"); }
+    function decimal() { append("."); }
+    function add() { append("+"); }
+    function subtract() { append("-"); }
+    function multiply() { append("*"); }
+    function divide() { append("/"); }
+
+    function numdel() {
+        expression = expression.slice(0, -1);
+        render();
+    }
+
+    function numAc() {
+        expression = "";
+        render();
+    }
+
+    function calculate() {
+        try {
+            expression = eval(expression).toString();
+        } catch {
+            expression = "Error";
+        }
+        render();
+    }
+
+    render();
+    const mySound = 
+    buttons.forEach(button => {
+        button.addEventListener('click', () => {
+            mySound.play();
+        });
+    });
+</script>
 </body>
 </html>
