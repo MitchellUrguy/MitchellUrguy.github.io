@@ -94,7 +94,7 @@
     <button class="bum" onclick="decimal()">.</button>
     <button class="bum" onclick="calculate()">=</button>
     <button class="bum" onclick="bracket1()">(</button>
-    <button class="bum" onclick="bracket1()">)</button>
+    <button class="bum" onclick="bracket2()">)</button>
     <div class="greybox"></div>
 </div>
 
@@ -126,7 +126,7 @@
     function multiply() { append("*"); }
     function divide() { append("/"); }
     function bracket1() { append("("); }
-    function bracket1() { append(")"); }
+    function bracket2() { append(")"); }
 
     function numdel() {
         expression = expression.slice(0, -1);
