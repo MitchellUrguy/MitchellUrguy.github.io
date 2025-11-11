@@ -146,12 +146,11 @@
         }
         render();
     }
-    const clickSound = new Audio("Webprojects/Week 10/Day 4/one-push-mouse-click-411513.mp3");
- 
     function playSound() {
-        clickSound.currentTime = 0; // rewind to start
-        clickSound.play();
+        const audio = new Audio('one-push-mouse-click-411513.mp3');
+        audio.play();
     }
+
     render();
 </script>
 </body>
