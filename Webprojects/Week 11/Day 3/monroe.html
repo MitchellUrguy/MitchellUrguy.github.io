@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adding to arrays</title>
+</head>
+<body>
+    <style>
+         .but {
+            position: relative;
+            width: 120px;
+            height: 60px;
+            font-size: 20px;
+            margin: 5px;
+            background-color: aquamarine;
+            z-index: 2;
+        }
+        .but:hover {
+            background-color: rgb(9, 145, 235);
+            color: white;
+            z-index: 2;
+        }
+    </style>
+
+ <!--get input from user-->
+    <input type="text" id="firstName" placeholder="Enter First Name">
+    <input type="text" id="lastName" placeholder="Enter Last Name">
+    <input type="number" id="age" placeholder="Enter Age">
+<br>
+<br>
+    <button class="but" onclick="addPerson()">Add Person</button>
+    <button class="but" onclick="displayinfo()">Show recent</button>
+    <button class="but" onclick="displayPeople()">Display People</button>
+
+    
+    
+    <script>
+        let arraypeople = [];
+
+        //add person information to array
+        function addPerson() {
+            let firstName = document.getElementById("firstName").value;
+            let lastName = document.getElementById("lastName").value;
+            let age = parseInt(document.getElementById("age").value);
+
+            let person = {
+                firstName: firstName,
+                lastName: lastName,
+                age: age
+            };
+
+            arraypeople.push(person);
+            document.getElementById("firstName").value = "";
+            document.getElementById("lastName").value = "";
+            document.getElementById("age").value = "";
+        }
+
+        //display the information of the more recent person entered
+        function displayinfo () {
+            let recentPerson = arraypeople[arraypeople.length - 1];
+            document.write("<h2>Most Recent Person Added:</h2>");
+            document.write("<p>" + recentPerson.firstName + " " + recentPerson.lastName + ", Age: " + recentPerson.age + "</p>");
+        }
+        //dusplay the entire array
+        function displayPeople() {
+            document.write("<h2>People Information:</h2>");
+            arraypeople.forEach(function(person, index) {
+                document.write("<p>Person " + (index + 1) + ": " + person.firstName + " " + person.lastName + ", Age: " + person.age + "</p>");
+            });
+        }
+    </script>
+</body>
+</html>
