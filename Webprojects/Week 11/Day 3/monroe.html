@@ -42,11 +42,11 @@
     <button class="but" onclick="displayPeople()">Display People</button>
 
     <h2>List of people</h2>
-    <div id="peopleList"></div>
 
     
     
     <script>
+
         let arraypeople = [];
 
         //add person information to array
@@ -65,6 +65,10 @@
             document.getElementById("firstName").value = "";
             document.getElementById("lastName").value = "";
             document.getElementById("age").value = "";
+            
+             arraypeople.forEach(function(person, index) {
+                document.write("<p>Person " + (index + 1) + ": " + person.firstName + " " + person.lastName + ", Age: " + person.age + "</p>");
+            });
         }
 
         // //display the information of the more recent person entered
@@ -81,12 +85,12 @@
         //     });
         // }
 
-        while (true) {
-            document.write("<h2>People Information:</h2>");
-            arraypeople.forEach(function(person, index) {
-                document.write("<p>Person " + (index + 1) + ": " + person.firstName + " " + person.lastName + ", Age: " + person.age + "</p>");
-            });
-        }
+        // while (flag = 1) {
+        //     arraypeople.forEach(function(person, index) {
+        //         document.write("<p>Person " + (index + 1) + ": " + person.firstName + " " + person.lastName + ", Age: " + person.age + "</p>");
+        //     });
+        //     flag = 0;
+        // }
     </script>
 </body>
 </html>
