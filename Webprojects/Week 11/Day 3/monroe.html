@@ -7,6 +7,14 @@
 </head>
 <body>
     <style>
+        .t {
+            position: relative;
+            width: 200px;
+            height: 30px;
+            font-size: 16px;
+            margin: 5px;
+            z-index: 2;
+        }
          .but {
             position: relative;
             width: 120px;
@@ -24,9 +32,9 @@
     </style>
 
  <!--get input from user-->
-    <input type="text" id="firstName" placeholder="Enter First Name">
-    <input type="text" id="lastName" placeholder="Enter Last Name">
-    <input type="number" id="age" placeholder="Enter Age">
+    <input class = "t" type="text" id="firstName" placeholder="Enter First Name">
+    <input class = "t" type="text" id="lastName" placeholder="Enter Last Name">
+    <input class = "t" type="number" id="age" placeholder="Enter Age">
 <br>
 <br>
     <button class="but" onclick="addPerson()">Add Person</button>
@@ -62,7 +70,7 @@
             document.write("<h2>Most Recent Person Added:</h2>");
             document.write("<p>" + recentPerson.firstName + " " + recentPerson.lastName + ", Age: " + recentPerson.age + "</p>");
         }
-        //dusplay the entire array
+        //display the entire array
         function displayPeople() {
             document.write("<h2>People Information:</h2>");
             arraypeople.forEach(function(person, index) {
