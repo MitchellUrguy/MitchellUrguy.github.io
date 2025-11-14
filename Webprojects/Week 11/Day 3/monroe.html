@@ -38,10 +38,12 @@
 <br>
 <br>
     <button class="but" onclick="addPerson()">Add Person</button>
-    <button class="but" onclick="displayinfo()">Show recent</button>
-    <button class="but" onclick="displayPeople()">Display People</button>
+    <!-- <button class="but" onclick="displayinfo()">Show recent</button>
+    <button class="but" onclick="displayPeople()">Display People</button> -->
 
+    <!--Set up display area -->
     <h2>List of people</h2>
+    <p1 id="pi"></p1>
 
     
     
@@ -61,13 +63,16 @@
                 age: age
             };
 
+            //clear the text boxes
             arraypeople.push(person);
             document.getElementById("firstName").value = "";
             document.getElementById("lastName").value = "";
             document.getElementById("age").value = "";
-            
+
+            //update the display list
+            document.getElementById("pi").innerHTML = "";
              arraypeople.forEach(function(person, index) {
-                document.write("<p>Person " + (index + 1) + ": " + person.firstName + " " + person.lastName + ", Age: " + person.age + "</p>");
+                document.getElementById("pi").innerHTML += "<p>Person " + (index + 1) + ": " + person.firstName + " " + person.lastName + ", Age: " + person.age + "</p>";
             });
         }
 
