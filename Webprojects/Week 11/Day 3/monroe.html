@@ -96,6 +96,39 @@
         //     });
         //     flag = 0;
         // }
+        
+            // save after adding
+        //     savePeople();{
+        // }
+
+        // // Persist arraypeople to localStorage
+        // function savePeople() {
+        //     try {
+        //         localStorage.setItem('monroe_people', JSON.stringify(arraypeople));
+        //     } catch (e) {
+        //         // localStorage not available
+        //     }
+        // }
+
+        // // Load from localStorage (if available) and render into #pi
+        // function loadPeople() {
+        //     try {
+        //         var saved = localStorage.getItem('monroe_people');
+        //         if (saved) {
+        //             arraypeople = JSON.parse(saved);
+        //             // ensure display is updated to match existing rendering style
+        //             document.getElementById("pi").innerHTML = "";
+        //             arraypeople.forEach(function(person, index) {
+        //                 document.getElementById("pi").innerHTML += "<p>Person " + (index + 1) + ": " + person.firstName + " " + person.lastName + ", Age: " + person.age + "</p>";
+        //             });
+        //         }
+        //     } catch (e) {
+        //         // localStorage not available, do nothing
+        //     }
+        // }
+
+        // // load saved people when the script runs
+        // loadPeople();
     </script>
 </body>
 </html>
