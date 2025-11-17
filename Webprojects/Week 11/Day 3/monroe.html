@@ -76,59 +76,6 @@
             });
         }
 
-        // //display the information of the more recent person entered
-        // function displayinfo () {
-        //     let recentPerson = arraypeople[arraypeople.length - 1];
-        //     document.write("<h2>Most Recent Person Added:</h2>");
-        //     document.write("<p>" + recentPerson.firstName + " " + recentPerson.lastName + ", Age: " + recentPerson.age + "</p>");
-        // }
-        // //display the entire array
-        // function displayPeople() {
-        //     document.write("<h2>People Information:</h2>");
-        //     arraypeople.forEach(function(person, index) {
-        //         document.write("<p>Person " + (index + 1) + ": " + person.firstName + " " + person.lastName + ", Age: " + person.age + "</p>");
-        //     });
-        // }
-
-        // while (flag = 1) {
-        //     arraypeople.forEach(function(person, index) {
-        //         document.write("<p>Person " + (index + 1) + ": " + person.firstName + " " + person.lastName + ", Age: " + person.age + "</p>");
-        //     });
-        //     flag = 0;
-        // }
-        
-            // save after adding
-        //     savePeople();{
-        // }
-
-        // // Persist arraypeople to localStorage
-        // function savePeople() {
-        //     try {
-        //         localStorage.setItem('monroe_people', JSON.stringify(arraypeople));
-        //     } catch (e) {
-        //         // localStorage not available
-        //     }
-        // }
-
-        // // Load from localStorage (if available) and render into #pi
-        // function loadPeople() {
-        //     try {
-        //         var saved = localStorage.getItem('monroe_people');
-        //         if (saved) {
-        //             arraypeople = JSON.parse(saved);
-        //             // ensure display is updated to match existing rendering style
-        //             document.getElementById("pi").innerHTML = "";
-        //             arraypeople.forEach(function(person, index) {
-        //                 document.getElementById("pi").innerHTML += "<p>Person " + (index + 1) + ": " + person.firstName + " " + person.lastName + ", Age: " + person.age + "</p>";
-        //             });
-        //         }
-        //     } catch (e) {
-        //         // localStorage not available, do nothing
-        //     }
-        // }
-
-        // // load saved people when the script runs
-        // loadPeople();
     </script>
 </body>
 </html>
