@@ -115,7 +115,7 @@
         function exp() {
             let content = "";
             arraypeople.forEach(function(person, index) {
-                content += "Person " + (index + 1) + ": " + person.firstName + " " + person.lastName + ", Age: " + person.age + "\n";
+                content += "Person " + (index + 1) + ": " + person.firstName + " " + person.lastName + ", Age: " + person.age + ", Email: " + person.email + "\n";
             });
 
             let blob = new Blob([content], { type: 'text/plain' });
