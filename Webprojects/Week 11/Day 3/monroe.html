@@ -7,14 +7,15 @@
 </head>
 <body>
     <style>
+        /*setting up text box style*/
         .t {
             position: relative;
             width: 200px;
             height: 50px;
             font-size: 24px;
             margin: 5px;
-            z-index: 2;
         }
+        /*setting up button style*/
          .but {
             position: relative;
             width: 120px;
@@ -22,12 +23,33 @@
             font-size: 20px;
             margin: 5px;
             background-color: aquamarine;
-            z-index: 2;
+         }
+         /*setting clear button red to distinguish it  */
+        .butt {
+            position: relative;
+            
+            width: 120px;
+            height: 60px;
+            font-size: 20px;
+            margin: 5px;
+            background-color: rgb(255, 0, 0);
         }
+        /*For some reason my one button sat lower than the others, this fixes it*/
+        .buttons {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        /*making the buttons fancy*/
         .but:hover {
             background-color: rgb(9, 145, 235);
             color: white;
-            z-index: 2;
+
+        }
+        .butt:hover{
+            background-color: rgb(150, 3, 3);
+            color: white;
         }
     </style>
 
@@ -35,12 +57,16 @@
     <input class = "t" type="text" id="firstName" placeholder="Enter First Name">
     <input class = "t" type="text" id="lastName" placeholder="Enter Last Name">
     <input class = "t" type="number" id="age" placeholder="Enter Age">
+    <input class = "t" type="text" id="email" placeholder="Enter Email">
 <br>
 <br>
+<!--setting up buttons-->
+<div class="buttons">
     <button class="but" onclick="addPerson()">Add Person</button>
-    <!-- <button class="but" onclick="displayinfo()">Show recent</button>
-    <button class="but" onclick="displayPeople()">Display People</button> -->
+    <button class="but" onclick="exp()">Export to a .txt file</button>
+    <button class="butt" onclick="clearList()">Clear List</button>
 
+</div>
     <!--Set up display area -->
     <h2>List of people</h2>
     <p1 id="pi"></p1>
@@ -56,11 +82,13 @@
             let firstName = document.getElementById("firstName").value;
             let lastName = document.getElementById("lastName").value;
             let age = parseInt(document.getElementById("age").value);
+            let email = document.getElementById("email").value;
 
             let person = {
                 firstName: firstName,
                 lastName: lastName,
-                age: age
+                age: age,
+                email: email
             };
 
             //clear the text boxes
@@ -68,14 +96,34 @@
             document.getElementById("firstName").value = "";
             document.getElementById("lastName").value = "";
             document.getElementById("age").value = "";
+            document.getElementById("email").value = "";
 
             //update the display list
             document.getElementById("pi").innerHTML = "";
              arraypeople.forEach(function(person, index) {
-                document.getElementById("pi").innerHTML += "<p>Person " + (index + 1) + ": " + person.firstName + " " + person.lastName + ", Age: " + person.age + "</p>";
+                document.getElementById("pi").innerHTML += "<p>Person " + (index + 1) + ": " + person.firstName + " " + person.lastName + ", Age: " + person.age + ", Email: " + person.email + "</p>";
             });
         }
 
+        //clear the list
+        function clearList() {
+            arraypeople = [];
+            document.getElementById("pi").innerHTML = "";
+        }
+
+        //export to a .txt file
+        function exp() {
+            let content = "";
+            arraypeople.forEach(function(person, index) {
+                content += "Person " + (index + 1) + ": " + person.firstName + " " + person.lastName + ", Age: " + person.age + "\n";
+            });
+
+            let blob = new Blob([content], { type: 'text/plain' });
+            let a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'people.txt';
+            a.click();
+        }
     </script>
 </body>
 </html>
