@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>CSV + SQL Viewer</title>
+    <!-- Imports PapaParse for CSV parsing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <!-- Imports SQL.js for in-browser SQL database -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
+
+    <style>
+        :root {
+            --bg: #f6f7fb;
+            --card: #ffffff;
+            --text: #222;
+            --accent: #4A6CF7;
+            --border: #d0d0d0;
+        }
+
+        /* Dark mode styles */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #1e1f22;
+                --card: #2a2c31;
+                --text: #e5e5e5;
+                --accent: #7396ff;
+                --border: #444;
+            }
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: "Inter", Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h2, h3 {
+            margin-top: 0;
+        }
+
+        .card {
+            background: var(--card);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+            border: 1px solid var(--border);
+            margin-bottom: 20px;
+        }
+
+        #container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        /* Set a fixed height for table outputs to make them scrollable */
+        #csvTable, #sqlOutput {
+            overflow: auto;
+            height: 400px;
+        }
+
+        .half {
+            flex: 1;
+            min-width: 320px;
+            margin-bottom: 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        table th {
+            background: var(--accent);
+            color: white;
+            padding: 8px;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        table td {
+            padding: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        table tr:nth-child(even) {
+            background: rgba(0,0,0,0.04);
+        }
+
+        textarea {
+            width: 100%;
+            height: 120px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            padding: 8px;
+            background: var(--card);
+            color: var(--text);
+            box-sizing: border-box;
+        }
+
+        button {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: 0.15s;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        input[type="file"] {
+            padding: 6px 0;
+        }
+
+        /* --- CSS for "Add Row" Input Boxes --- */
+        #addRowInputs {
+            display: grid;
+            /* Creates a responsive grid of columns */
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 12px;
+            margin-bottom: 15px; 
+        }
+        
+        .input-pair {
+            display: grid;
+            /* Aligns label and input side-by-side */
+            grid-template-columns: auto 1fr;
+            gap: 6px;
+            align-items: center;
+        }
+        
+        .input-pair label {
+            justify-self: end; /* Right-aligns label */
+            font-size: 0.9em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis; /* Adds ... if label is too long */
+            max-width: 120px;
+        }
+
+        input[type="text"] {
+            padding: 6px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: var(--card);
+            color: var(--text);
+            width: 100%; 
+            box-sizing: border-box;
+        }
+        
+        /* --- CSS for Example Query Buttons --- */
+        #exampleQueries {
+            margin-top: 10px;
+            margin-bottom: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        #exampleQueries button {
+            background: var(--bg);
+            color: var(--accent);
+            border: 1px solid var(--accent);
+            padding: 4px 10px;
+            font-size: 12px;
+        }
+
+        #exampleQueries button:hover {
+            background: var(--accent);
+            color: white;
+            opacity: 1;
+        }
+
+    </style>
+</head>
+<body>
+
+<h2>CSV Viewer + Editor + SQL Runner</h2>
+
+<div class="card">
+    <input type="file" id="csvFile" accept=".csv">
+    <button onclick="downloadCSV()">Download Updated CSV</button>
+</div>
+
+<div class="card">
+    <h3>Add new row</h3>
+    <div id="addRowInputs"><i>Load a CSV to see headers...</i></div>
+    <button onclick="addRow()">Add Row</button>
+</div>
+
+<div id="container">
+    <div class="card half">
+        <h3>CSV Table</h3>
+        <div id="csvTable"><i>Load a CSV file to begin...</i></div>
+    </div>
+
+    <div class="card half">
+        <h3>SQL Query</h3>
+        <textarea id="sqlQuery">SELECT * FROM data LIMIT 10;</textarea>
+        
+        <div id="exampleQueries">
+            <i>Load CSV to see example queries...</i>
+        </div>
+
+        <button onclick="runSQL()">Run SQL</button>
+        <div id="sqlOutput" style="margin-top:10px;"></div>
+    </div>
+</div>
+
+<script>
+let csvData = [];
+let db;
+
+// Load SQL.js WebAssembly
+SQL = window.initSqlJs({
+    locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${file}`
+});
+
+// Event listener for the file input
+document.getElementById("csvFile").addEventListener("change", function (e) {
+    const file = e.target.files[0];
+    Papa.parse(file, {
+        header: false, // We treat row 0 as headers manually
+        skipEmptyLines: true,
+        complete: function (results) {
+            csvData = results.data;
+            renderTable();
+            renderAddRowInputs();
+            renderExampleQueries();
+            loadIntoSQLite();
+        }
+    });
+});
+
+// Renders the main CSV data table
+function renderTable() {
+    if (!csvData.length) return;
+
+    let html = "<table><thead><tr>";
+    csvData[0].forEach(col => html += `<th>${col}</th>`);
+    html += "</tr></thead><tbody>";
+
+    // Loop from 1 to skip header row
+    for (let i = 1; i < csvData.length; i++) {
+        html += "<tr>";
+        csvData[i].forEach(val => html += `<td>${val}</td>`);
+        html += "</tr>";
+    }
+
+    html += "</tbody></table>";
+    document.getElementById("csvTable").innerHTML = html;
+}
+
+// Renders the "Add new row" input fields based on headers
+function renderAddRowInputs() {
+    const container = document.getElementById("addRowInputs");
+    container.innerHTML = "";
+
+    if (!csvData.length) return;
+
+    csvData[0].forEach(header => {
+        container.innerHTML += `
+            <div class="input-pair">
+                <label for="new_${header}">${header}:</label>
+                <input type="text" id="new_${header}">
+            </div>
+        `;
+    });
+}
+
+// Renders the example query buttons
+function renderExampleQueries() {
+    const container = document.getElementById("exampleQueries");
+    
+    if (!csvData.length || csvData.length < 2) {
+        container.innerHTML = "<i>Load CSV to see example queries.</i>";
+        return;
+    }
+
+    const headers = csvData[0];
+    
+    // Check if this looks like the university data
+    const hasUniversityHeaders = headers.includes("Rank") && 
+                                 headers.includes("University_Name") && 
+                                 headers.includes("Country") &&
+                                 headers.includes("Overall_Score");
+
+    if (hasUniversityHeaders) {
+        // --- Specific University Examples ---
+        // Note: SQL string literals use single quotes ('), which must be escaped (\\')
+        // inside the HTML onclick attribute's single quotes.
+        container.innerHTML = `
+            <button onclick="setQuery('SELECT * FROM data ORDER BY \\"Rank\\" ASC LIMIT 10;')">Top 10 by Rank</button>
+            <button onclick="setQuery('SELECT \\"Country\\", COUNT(*) AS University_Count FROM data GROUP BY \\"Country\\" ORDER BY University_Count DESC LIMIT 10;')">Count by Country</button>
+            <button onclick="setQuery('SELECT \\"University_Name\\", \\"Academic_Reputation_Score\\" FROM data ORDER BY \\"Academic_Reputation_Score\\" DESC LIMIT 5;')">Top 5 Academic</button>
+            <button onclick="setQuery('SELECT \\"University_Name\\", \\"Employer_Reputation_Score\\" FROM data ORDER BY \\"Employer_Reputation_Score\\" DESC LIMIT 5;')">Top 5 Employer</button>
+            <button onclick="setQuery('SELECT \\"University_Name\\", \\"Rank\\", \\"Overall_Score\\" FROM data WHERE \\"Overall_Score\\" > 95;')">Score > 95</button>
+            <button onclick="setQuery('SELECT * FROM data WHERE \\"Country\\" = \\'United Kingdom\\' ORDER BY \\"Rank\\" ASC LIMIT 10;')">Top 10 in UK</button>
+            <button onclick="setQuery('SELECT AVG(\\"Citations_per_Faculty_Score\\") AS Avg_Citations, \\"Country\\" FROM data GROUP BY \\"Country\\" ORDER BY Avg_Citations DESC LIMIT 10;')">Avg. Citations by Country</button>
+        `;
+    } else {
+        // --- Generic Fallback Examples ---
+        const firstCol = `"${headers[0]}"`;
+        const firstColName = headers[0];
+        let numericCol = null;
+        let numericColName = null;
+        
+        // Try to find first numeric column in the first data row
+        for (let i = 0; i < csvData[1].length; i++) {
+            const val = csvData[1][i];
+            const cleanVal = String(val).replace(/[, $£€]/g, '');
+            if (cleanVal && !isNaN(parseFloat(cleanVal)) && isFinite(cleanVal)) {
+                numericCol = `"${headers[i]}"`;
+                numericColName = headers[i];
+                break;
+            }
+        }
+
+        let html = `
+            <button onclick="setQuery('SELECT * FROM data LIMIT 10;')">All (Limit 10)</button>
+            <button onclick="setQuery('SELECT COUNT(*) AS total_rows FROM data;')">Count Rows</button>
+            <button onclick="setQuery('SELECT ${firstCol}, COUNT(*) AS count FROM data GROUP BY ${firstCol} ORDER BY count DESC LIMIT 10;')">Group by ${firstColName}</button>
+        `;
+        if (numericCol) {
+             html += `<button onclick="setQuery('SELECT AVG(${numericCol}) AS avg_${numericColName} FROM data;')">Avg. ${numericColName}</button>`;
+        }
+        container.innerHTML = html;
+    }
+}
+
+// --- THIS IS THE UPDATED FUNCTION ---
+// It now sets the text in the query box AND runs it.
+function setQuery(query) {
+    document.getElementById("sqlQuery").value = query;
+    runSQL(); // <-- Run the query immediately
+}
+
+// Adds the new row data to the CSV and re-renders
+function addRow() {
+    if (!csvData.length) {
+        alert("Please load a CSV first.");
+        return;
+    }
+    
+    const newRow = csvData[0].map(header =>
+        document.getElementById("new_" + header).value
+    );
+
+    // Clear inputs after adding
+    csvData[0].forEach(header => {
+        document.getElementById("new_" + header).value = "";
+    });
+
+    csvData.push(newRow);
+    renderTable();      // Update the HTML table
+    loadIntoSQLite();   // Re-load the data into the SQL database
+}
+
+// Triggers a download of the current CSV data
+function downloadCSV() {
+    if (!csvData.length) {
+        alert("No data to download.");
+        return;
+    }
+    
+    const csv = Papa.unparse(csvData);
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "updated.csv";
+    document.body.appendChild(a); 
+    a.click();
+    document.body.removeChild(a);
+}
+
+// Loads the csvData into the in-memory SQLite database
+async function loadIntoSQLite() {
+    if (!csvData.length) return;
+    
+    db = await SQL;
+
+    const columns = csvData[0];
+    const rows = csvData.slice(1); // All data except the header row
+
+    const sqlDB = new db.Database();
+    
+    // Quote all column names to handle spaces or special characters
+    const colDefs = columns.map(c => `"${c}" TEXT`).join(",");
+
+    try {
+        sqlDB.run(`CREATE TABLE data (${colDefs});`);
+
+        // Prepare an insert statement
+        const insert = `INSERT INTO data VALUES (${columns.map(_ => "?").join(",")})`;
+        const stmt = sqlDB.prepare(insert);
+
+        // Insert all rows
+        rows.forEach(r => {
+            // Ensure row has same number of columns as header
+            if (r.length === columns.length) {
+                stmt.run(r);
+            }
+        });
+        stmt.free();
+
+        // Make the database available globally
+        window.sqlite = sqlDB;
+    } catch (err) {
+        console.error("SQLite Error:", err);
+        document.getElementById("sqlOutput").innerHTML = `<b>SQLite Load Error:</b> ${err}`;
+    }
+}
+
+// Runs the SQL query from the textarea
+function runSQL() {
+    const query = document.getElementById("sqlQuery").value;
+    let outputDiv = document.getElementById("sqlOutput");
+
+    if (!window.sqlite) {
+        outputDiv.innerHTML = "<b>Error:</b> Database not loaded. Please load a CSV file first.";
+        return;
+    }
+
+    try {
+        // Execute the query
+        const result = window.sqlite.exec(query);
+
+        if (!result.length) {
+            outputDiv.innerHTML = "<i>Query executed successfully. No results returned.</i>";
+            return;
+        }
+
+        // Build an HTML table from the results
+        const res = result[0];
+        let html = "<table><thead><tr>";
+
+        res.columns.forEach(col => html += `<th>${col}</th>`);
+        html += "</tr></thead><tbody>";
+
+        res.values.forEach(row => {
+            html += "<tr>";
+            row.forEach(v => html += `<td>${v}</td>`);
+            html += "</tr>";
+        });
+
+        html += "</tbody></table>";
+        outputDiv.innerHTML = html;
+
+    } catch (err) {
+        // Display any SQL errors
+        outputDiv.innerHTML = `<b>Error:</b> ${err}`;
+    }
+}
+</script>
+</body>
+</html>
