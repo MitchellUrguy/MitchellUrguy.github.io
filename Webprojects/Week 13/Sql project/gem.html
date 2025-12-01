@@ -207,7 +207,8 @@
         <h3>SQL Query</h3>
         <textarea id="sqlQuery">SELECT * FROM data LIMIT 10;</textarea>
         
-        <div id="exampleQueries">
+        <!-- quick examples container (will be populated dynamically) -->
+        <div id="quickExamples" style="margin-top:8px; margin-bottom:8px; display:flex; gap:6px; flex-wrap:wrap;">
             <i>Load CSV to see example queries...</i>
         </div>
 
@@ -235,7 +236,7 @@ document.getElementById("csvFile").addEventListener("change", function (e) {
             csvData = results.data;
             renderTable();
             renderAddRowInputs();
-            renderExampleQueries();
+            renderQuickExamples();   // <-- add quick examples for this CSV
             loadIntoSQLite();
         }
     });
@@ -277,44 +278,71 @@ function renderAddRowInputs() {
     });
 }
 
-// Renders the example query buttons
-function renderExampleQueries() {
-    const container = document.getElementById("exampleQueries");
-    
+// NEW: render quick example buttons using DOM (avoids onclick string-escaping bugs)
+// Updated to cast numeric columns to REAL where needed so numeric sorting/filters work correctly.
+function renderQuickExamples() {
+    const container = document.getElementById('quickExamples');
+    container.innerHTML = '';
     if (!csvData.length || csvData.length < 2) {
-        container.innerHTML = "<i>Load CSV to see example queries.</i>";
+        container.innerHTML = '<i>Load CSV to see example queries...</i>';
         return;
     }
 
-    const headers = csvData[0];
-    
-    // Check if this looks like the university data
-    const hasUniversityHeaders = headers.includes("Rank") && 
-                                 headers.includes("University_Name") && 
-                                 headers.includes("Country") &&
-                                 headers.includes("Overall_Score");
+    const headers = csvData[0].map(h => String(h));
+    const idx = name => headers.findIndex(h => h === name);
+
+    const hasUniversityHeaders = headers.includes("Rank") &&
+                                 headers.includes("University_Name") &&
+                                 headers.includes("Country");
+
+    // helper to append a button that runs an example query
+    const appendBtn = (text, query) => {
+        const btn = document.createElement('button');
+        btn.textContent = text;
+        btn.addEventListener('click', () => runExample(query));
+        container.appendChild(btn);
+    };
 
     if (hasUniversityHeaders) {
-        // --- Specific University Examples ---
-        // Note: SQL string literals use single quotes ('), which must be escaped (\\')
-        // inside the HTML onclick attribute's single quotes.
-        container.innerHTML = `
-            <button onclick="setQuery('SELECT * FROM data ORDER BY \\"Rank\\" ASC LIMIT 10;')">Top 10 by Rank</button>
-            <button onclick="setQuery('SELECT \\"Country\\", COUNT(*) AS University_Count FROM data GROUP BY \\"Country\\" ORDER BY University_Count DESC LIMIT 10;')">Count by Country</button>
-            <button onclick="setQuery('SELECT \\"University_Name\\", \\"Academic_Reputation_Score\\" FROM data ORDER BY \\"Academic_Reputation_Score\\" DESC LIMIT 5;')">Top 5 Academic</button>
-            <button onclick="setQuery('SELECT \\"University_Name\\", \\"Employer_Reputation_Score\\" FROM data ORDER BY \\"Employer_Reputation_Score\\" DESC LIMIT 5;')">Top 5 Employer</button>
-            <button onclick="setQuery('SELECT \\"University_Name\\", \\"Rank\\", \\"Overall_Score\\" FROM data WHERE \\"Overall_Score\\" > 95;')">Score > 95</button>
-            <button onclick="setQuery('SELECT * FROM data WHERE \\"Country\\" = \\'United Kingdom\\' ORDER BY \\"Rank\\" ASC LIMIT 10;')">Top 10 in UK</button>
-            <button onclick="setQuery('SELECT AVG(\\"Citations_per_Faculty_Score\\") AS Avg_Citations, \\"Country\\" FROM data GROUP BY \\"Country\\" ORDER BY Avg_Citations DESC LIMIT 10;')">Avg. Citations by Country</button>
-        `;
+        const countryIdx = idx("Country");
+        const countries = Array.from(new Set(csvData.slice(1).map(r => r[countryIdx]).filter(Boolean))).sort();
+
+        // Cast Rank and score columns to REAL for numeric ordering/comparison
+        appendBtn('Top 10 by Rank', 'SELECT * FROM data ORDER BY CAST("Rank" AS REAL) ASC LIMIT 10;');
+        appendBtn('Top 10 in Canada', 'SELECT * FROM data WHERE "Country" = \'Canada\' ORDER BY CAST("Rank" AS REAL) ASC LIMIT 10;');
+        appendBtn('Top 10 Employer Reputation', 'SELECT "University_Name", "Employer_Reputation_Score" FROM data ORDER BY CAST("Employer_Reputation_Score" AS REAL) DESC LIMIT 10;');
+        appendBtn('Top 5 Academic Reputation', 'SELECT "University_Name", "Academic_Reputation_Score" FROM data ORDER BY CAST("Academic_Reputation_Score" AS REAL) DESC LIMIT 5;');
+        // numeric compare: cast Overall_Score to REAL so 100 is correctly > 95
+        appendBtn('Score > 95', 'SELECT "University_Name", "Rank", "Overall_Score" FROM data WHERE CAST("Overall_Score" AS REAL) > 95 ORDER BY CAST("Overall_Score" AS REAL) DESC;');
+        // NEW: average overall score per country (top 10 countries by average), rounded to 2 decimals
+        appendBtn('Avg Overall Score by Country', 'SELECT "Country", ROUND(AVG(CAST("Overall_Score" AS REAL)), 2) AS Avg_Overall FROM data GROUP BY "Country" ORDER BY Avg_Overall DESC LIMIT 10;');
+
+        // country selector
+        const sel = document.createElement('select');
+        sel.id = 'countrySelect';
+        const opt0 = document.createElement('option');
+        opt0.value = '';
+        opt0.textContent = '-- Select Country --';
+        sel.appendChild(opt0);
+        countries.forEach(c => {
+            const o = document.createElement('option');
+            o.value = c;            // raw value, not HTML-escaped
+            o.textContent = c;      // safe display
+            sel.appendChild(o);
+        });
+        container.appendChild(sel);
+
+        const topBtn = document.createElement('button');
+        topBtn.textContent = 'Top in Country';
+        topBtn.addEventListener('click', runTopInCountry);
+        container.appendChild(topBtn);
     } else {
-        // --- Generic Fallback Examples ---
-        const firstCol = `"${headers[0]}"`;
-        const firstColName = headers[0];
+        // generic fallback examples
+        const firstCol = headers[0] ? `"${headers[0]}"` : '"col1"';
+        const firstColName = headers[0] || 'col1';
         let numericCol = null;
         let numericColName = null;
-        
-        // Try to find first numeric column in the first data row
+
         for (let i = 0; i < csvData[1].length; i++) {
             const val = csvData[1][i];
             const cleanVal = String(val).replace(/[, $£€]/g, '');
@@ -325,16 +353,25 @@ function renderExampleQueries() {
             }
         }
 
-        let html = `
-            <button onclick="setQuery('SELECT * FROM data LIMIT 10;')">All (Limit 10)</button>
-            <button onclick="setQuery('SELECT COUNT(*) AS total_rows FROM data;')">Count Rows</button>
-            <button onclick="setQuery('SELECT ${firstCol}, COUNT(*) AS count FROM data GROUP BY ${firstCol} ORDER BY count DESC LIMIT 10;')">Group by ${firstColName}</button>
-        `;
+        appendBtn('All (Limit 10)', 'SELECT * FROM data LIMIT 10;');
+        appendBtn('Count Rows', 'SELECT COUNT(*) AS total_rows FROM data;');
+        appendBtn(`Group by ${firstColName}`, `SELECT ${firstCol}, COUNT(*) AS count FROM data GROUP BY ${firstCol} ORDER BY count DESC LIMIT 10;`);
         if (numericCol) {
-             html += `<button onclick="setQuery('SELECT AVG(${numericCol}) AS avg_${numericColName} FROM data;')">Avg. ${numericColName}</button>`;
+            // When averaging a generic numeric column, cast to REAL and round to 2 decimals
+            appendBtn(`Avg. ${numericColName}`, `SELECT ROUND(AVG(CAST(${numericCol} AS REAL)), 2) AS avg_${numericColName} FROM data;`);
         }
-        container.innerHTML = html;
     }
+}
+
+// helper to run top universities for selected country
+function runTopInCountry() {
+    const sel = document.getElementById('countrySelect');
+    if (!sel) return alert('Country selector not available.');
+    const country = sel.value;
+    if (!country) return alert('Please select a country.');
+    const safe = country.replace(/'/g, "''"); // escape single quotes for SQL literal
+    // Order by numeric Rank
+    runExample(`SELECT "University_Name", "Rank", "Overall_Score" FROM data WHERE "Country" = '${safe}' ORDER BY CAST("Rank" AS REAL) ASC LIMIT 10;`);
 }
 
 // --- THIS IS THE UPDATED FUNCTION ---
@@ -460,6 +497,23 @@ function runSQL() {
         // Display any SQL errors
         outputDiv.innerHTML = `<b>Error:</b> ${err}`;
     }
+}
+
+// New helper: insert SQL into the textarea without executing it
+function runExample(query) {
+    document.getElementById("sqlQuery").value = query;
+    runSQL();
+}
+
+// small helpers to avoid XSS in generated HTML and help SQL escaping in values
+function escapeHtml(s) {
+    return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+}
+function escapeSqlString(s) {
+    return String(s).replace(/'/g, "''");
+}
+function escapeSqlIdentifier(id) {
+    return String(id).replace(/"/g, '""');
 }
 </script>
 </body>
