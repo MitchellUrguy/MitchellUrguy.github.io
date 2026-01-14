@@ -127,13 +127,13 @@
 
         #playerValue {
             bottom: 180px;
-            left: 50%;
+            left: 30%;
             transform: translateX(-50%);
         }
 
-        #dealerValue {
-            top: 120px;
-            left: 50%;
+        #playerValue2 {
+            bottom: 180px;
+            left: 70%;
             transform: translateX(-50%);
         }
 
@@ -264,9 +264,8 @@
         /* Current Bet Display */
         #currentBet {
             position: absolute;
-            bottom: 130px;
-            left: 50%;
-            transform: translateX(-50%);
+            bottom: 30px;
+            right: 200px;
             background: rgba(0, 0, 0, 0.8);
             padding: 10px 20px;
             border-radius: 10px;
@@ -369,7 +368,7 @@
         <div id="playerValue" class="hand-value" style="display: none;">
             Player: <span id="playerValueText">0</span>
         </div>
-        <div id="playerValue2" class="hand-value" style="display: none; bottom: 150px; left: 50%; transform: translateX(-50%);">
+        <div id="playerValue2" class="hand-value" style="display: none;">
             Player 2: <span id="playerValueText2">0</span>
         </div>
         <div id="dealerValue" class="hand-value" style="display: none;">
@@ -420,7 +419,7 @@
         let chipGeometry;
         let playerName = 'Player';
         let maxChips = 1000;
-        let leaderboard = JSON.parse(localStorage.getItem('blackjackLeaderboard')) || [];
+        let leaderboard = [];
         let secondHand = null;
         let currentHand = 'first';
 
@@ -481,7 +480,7 @@
 
             // Simulate loading
             simulateLoading();
-            displayLeaderboard();
+            loadLeaderboard();
             document.getElementById('playerName').addEventListener('input', (e) => playerName = e.target.value);
             playerName = document.getElementById('playerName').value;
         }
@@ -754,18 +753,44 @@
             animate();
         }
 
+        // Load leaderboard from server
+        async function loadLeaderboard() {
+            try {
+                const response = await fetch('https://api.jsonbin.io/v3/b/YOUR_BIN_ID/latest');
+                const data = await response.json();
+                leaderboard = data.record || [];
+            } catch (e) {
+                // Fallback to localStorage
+                leaderboard = JSON.parse(localStorage.getItem('blackjackLeaderboard')) || [];
+            }
+            displayLeaderboard();
+        }
+
         function updateLeaderboard(name, score) {
             const existing = leaderboard.find(e => e.name === name);
-            if (existing) {
-                if (score > existing.score) {
-                    existing.score = score;
-                }
-            } else {
+            if (!existing) {
                 leaderboard.push({ name, score });
             }
             leaderboard.sort((a, b) => b.score - a.score);
             leaderboard = leaderboard.slice(0, 5);
-            localStorage.setItem('blackjackLeaderboard', JSON.stringify(leaderboard));
+            
+            // Save to server
+            (async () => {
+                try {
+                    await fetch('https://api.jsonbin.io/v3/b/YOUR_BIN_ID', {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Master-Key': 'YOUR_API_KEY'
+                        },
+                        body: JSON.stringify(leaderboard)
+                    });
+                } catch (e) {
+                    // Fallback to localStorage
+                    localStorage.setItem('blackjackLeaderboard', JSON.stringify(leaderboard));
+                }
+            })();
+            
             displayLeaderboard();
         }
 
@@ -1128,7 +1153,6 @@
             currentHand = 'first';
            
             maxChips = Math.max(maxChips, playerChips);
-            updateLeaderboard(playerName, maxChips);
            
             setTimeout(() => {
                 updateUI();
@@ -1193,9 +1217,6 @@
                     break;
             }
            
-            maxChips = Math.max(maxChips, playerChips);
-            updateLeaderboard(playerName, maxChips);
-           
             showMessage(message, messageClass);
             setTimeout(() => finishGame(), 2500);
         }
@@ -1221,6 +1242,11 @@
                 const playerValue = calculateHandValue(playerHand);
                 document.getElementById('playerValueText').textContent = playerValue;
                 document.getElementById('playerValue').style.display = 'block';
+                if (secondHand) {
+                    document.getElementById('playerValue').style.left = '30%';
+                } else {
+                    document.getElementById('playerValue').style.left = '50%';
+                }
             } else {
                 document.getElementById('playerValue').style.display = 'none';
             }
@@ -1229,6 +1255,9 @@
                 const playerValue2 = calculateHandValue(secondHand);
                 document.getElementById('playerValueText2').textContent = playerValue2;
                 document.getElementById('playerValue2').style.display = 'block';
+                document.getElementById('playerValue2').style.left = '70%';
+                document.getElementById('playerValue2').style.bottom = '180px';
+                document.getElementById('playerValue2').style.transform = 'translateX(-50%)';
             } else {
                 document.getElementById('playerValue2').style.display = 'none';
             }
