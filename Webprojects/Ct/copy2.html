@@ -759,34 +759,53 @@
             animate();
         }
 
-        // GitHub Gist Leaderboard - Replace with your Gist ID
-        const GITHUB_GIST_ID = 'MitchellUrguy'; // Replace with your gist ID from https://gist.github.com
+        // Cloud Leaderboard using JSONBin.io (free, no auth required for basic use)
+        // First, create a bin at jsonbin.io and get your BIN_ID
+        const JSONBIN_BIN_ID = 'your-bin-id'; // You'll need to set this up
         
         async function loadLeaderboard() {
-            let cloudData = [];
+            let cloudData = null;
             
+            // Try to load from cloud
             try {
-                const response = await fetch(`https://api.github.com/gists/${GITHUB_GIST_ID}`);
+                const response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
+                    headers: { 'X-Access-Key': '$2b$10$8N7jZmjLdQfO1v9y7fN5Be' }
+                });
                 if (response.ok) {
                     const data = await response.json();
-                    const fileContent = data.files['blackjack-leaderboard.json'].content;
-                    cloudData = JSON.parse(fileContent);
+                    cloudData = data.record || [];
                 }
             } catch (e) {
-                console.log('Could not load from GitHub Gist');
+                console.log('Could not load from cloud storage');
             }
             
+            // Load from localStorage
             let localData = [];
             try {
                 const saved = localStorage.getItem('blackjackLeaderboard');
-                if (saved) localData = JSON.parse(saved);
-            } catch (e) {}
+                if (saved) {
+                    localData = JSON.parse(saved);
+                }
+            } catch (e) {
+                console.log('Error loading from localStorage');
+            }
             
-            // Merge and keep top 10
+            // Merge cloud and local data, keeping top 10 by score
             const merged = {};
-            [...(cloudData || []), ...localData].forEach(item => {
-                if (item.name && (!merged[item.name] || item.score > merged[item.name].score)) {
-                    merged[item.name] = item;
+            
+            if (cloudData && Array.isArray(cloudData)) {
+                cloudData.forEach(item => {
+                    if (item.name) {
+                        merged[item.name] = item;
+                    }
+                });
+            }
+            
+            localData.forEach(item => {
+                if (item.name) {
+                    if (!merged[item.name] || item.score > merged[item.name].score) {
+                        merged[item.name] = item;
+                    }
                 }
             });
             
@@ -800,30 +819,42 @@
                 leaderboard.push({ name, score, timestamp: new Date().toISOString() });
             } else {
                 existing.score = Math.max(existing.score, score);
+                existing.timestamp = new Date().toISOString();
             }
             leaderboard.sort((a, b) => b.score - a.score);
             leaderboard = leaderboard.slice(0, 10);
             
-            localStorage.setItem('blackjackLeaderboard', JSON.stringify(leaderboard));
-            saveToGist();
+            // Always save to localStorage
+            try {
+                localStorage.setItem('blackjackLeaderboard', JSON.stringify(leaderboard));
+            } catch (e) {
+                console.log('Could not save to localStorage');
+            }
+            
+            // Try to save to cloud (async)
+            saveToCloud();
             displayLeaderboard();
         }
-
-        async function saveToGist() {
+        
+        // Save leaderboard data to cloud storage
+        async function saveToCloud() {
             try {
-                const response = await fetch(`https://api.github.com/gists/${GITHUB_GIST_ID}`, {
-                    method: 'PATCH',
-                    headers: { 'Accept': 'application/vnd.github.v3+json' },
-                    body: JSON.stringify({
-                        files: {
-                            'blackjack-leaderboard.json': {
-                                content: JSON.stringify(leaderboard, null, 2)
-                            }
-                        }
-                    })
+                // Save to cloud storage service
+                const response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Access-Key': '$2b$10$8N7jZmjLdQfO1v9y7fN5Be'
+                    },
+                    body: JSON.stringify(leaderboard)
                 });
+                
+                if (!response.ok) {
+                    console.log('Cloud save status:', response.status);
+                }
             } catch (e) {
-                console.log('Gist update failed (localStorage backup active)');
+                // Silent fail - localStorage is the fallback
+                console.log('Cloud save failed (localStorage is being used)');
             }
         }
 
