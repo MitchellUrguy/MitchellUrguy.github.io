@@ -761,8 +761,8 @@
 
         // GitHub Repository Leaderboard - reads/writes directly to your repo
         const GITHUB_REPO = 'MitchellUrguy/MitchellUrguy.github.io'; // your-username/repo-name
-        const LEADERBOARD_FILE = 'leaderboard.json'; // file location in repo
-        const GITHUB_TOKEN = 'your-github-token-here'; // Get from https://github.com/settings/tokens
+        const LEADERBOARD_FILE = 'Webprojects/Ct/leaderboard.json'; // file location in repo
+        const GITHUB_TOKEN = localStorage.getItem('githubToken') || 'your-github-token-here'; // Get from https://github.com/settings/tokens
         
         async function loadLeaderboard() {
             let cloudData = [];
@@ -819,13 +819,19 @@
         }
 
         async function saveToGitHub() {
+            if (GITHUB_TOKEN === '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') {
+                console.log('GitHub token not set. Scores will be saved locally only.');
+                return;
+            }
+            
             try {
                 // First, get the current file SHA (needed for updates)
                 const getResponse = await fetch(
                     `https://api.github.com/repos/${GITHUB_REPO}/contents/${LEADERBOARD_FILE}`,
                     {
                         headers: {
-                            'Authorization': `token ${GITHUB_TOKEN}`
+                            'Authorization': `token ${GITHUB_TOKEN}`,
+                            'Accept': 'application/vnd.github.v3+json'
                         }
                     }
                 );
@@ -843,7 +849,8 @@
                         method: 'PUT',
                         headers: {
                             'Authorization': `token ${GITHUB_TOKEN}`,
-                            'Content-Type': 'application/json'
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/vnd.github.v3+json'
                         },
                         body: JSON.stringify({
                             message: `Update leaderboard - ${new Date().toLocaleString()}`,
@@ -854,7 +861,10 @@
                 );
                 
                 if (!updateResponse.ok) {
-                    console.log('GitHub save failed:', updateResponse.status);
+                    const error = await updateResponse.json();
+                    console.log('GitHub save failed:', error.message);
+                } else {
+                    console.log('✓ Leaderboard saved to GitHub');
                 }
             } catch (e) {
                 console.log('GitHub save error (localStorage backup active):', e.message);
