@@ -759,33 +759,31 @@
             animate();
         }
 
-        // GitHub Repository Leaderboard - reads/writes directly to your repo
-        const GITHUB_REPO = 'MitchellUrguy/MitchellUrguy.github.io'; // your-username/repo-name
-        const LEADERBOARD_FILE = 'Webprojects/Ct/leaderboard.json'; // file location in repo
-        const GITHUB_TOKEN = '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'; // Get from https://github.com/settings/tokens
+        // JSONBin.io Leaderboard - Cloud storage without server
+        const JSONBIN_API_KEY = '$2b$10$tYWCjxWKgXZpZ2q8N7gNS.wvOhK9h5YF0DvLJmJM2CQxYrCJm5l9a'; // Your JSONBin API key
+        const JSONBIN_BIN_ID = '678f8a5ae41b4d2f8c0b7a1f'; // Your bin ID
         
         async function loadLeaderboard() {
             let cloudData = [];
             
             try {
-                // Read from GitHub repo
                 const response = await fetch(
-                    `https://api.github.com/repos/${GITHUB_REPO}/contents/${LEADERBOARD_FILE}`,
+                    `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`,
                     {
                         headers: {
-                            'Accept': 'application/vnd.github.v3.raw',
-                            'Authorization': `token ${GITHUB_TOKEN}`
+                            'X-Master-Key': JSONBIN_API_KEY
                         }
                     }
                 );
                 if (response.ok) {
-                    cloudData = await response.json();
+                    const data = await response.json();
+                    cloudData = data.record || [];
                 }
             } catch (e) {
-                console.log('Could not load from GitHub repo');
+                console.log('Could not load from JSONBin:', e.message);
             }
             
-            // Use only GitHub data, clear any local storage data
+            // Use only cloud data
             localStorage.removeItem('blackjackLeaderboard');
             
             leaderboard = (cloudData || []).sort((a, b) => b.score - a.score).slice(0, 10);
@@ -807,55 +805,32 @@
         }
 
         async function saveToGitHub() {
-            if (GITHUB_TOKEN === 'your-github-token-here') {
-                console.log('GitHub token not set. Scores will be saved locally only.');
+            if (JSONBIN_API_KEY === '$2b$10$tYWCjxWKgXZpZ2q8N7gNS.wvOhK9h5YF0DvLJmJM2CQxYrCJm5l9a') {
+                console.log('JSONBin API key not set. Scores will not be saved.');
                 return;
             }
             
             try {
-                // First, get the current file SHA (needed for updates)
-                const getResponse = await fetch(
-                    `https://api.github.com/repos/${GITHUB_REPO}/contents/${LEADERBOARD_FILE}`,
-                    {
-                        headers: {
-                            'Authorization': `token ${GITHUB_TOKEN}`,
-                            'Accept': 'application/vnd.github.v3+json'
-                        }
-                    }
-                );
-                
-                let sha = null;
-                if (getResponse.ok) {
-                    const fileData = await getResponse.json();
-                    sha = fileData.sha;
-                }
-                
-                // Update or create the file
-                const updateResponse = await fetch(
-                    `https://api.github.com/repos/${GITHUB_REPO}/contents/${LEADERBOARD_FILE}`,
+                const response = await fetch(
+                    `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`,
                     {
                         method: 'PUT',
                         headers: {
-                            'Authorization': `token ${GITHUB_TOKEN}`,
                             'Content-Type': 'application/json',
-                            'Accept': 'application/vnd.github.v3+json'
+                            'X-Master-Key': JSONBIN_API_KEY
                         },
-                        body: JSON.stringify({
-                            message: `Update leaderboard - ${new Date().toLocaleString()}`,
-                            content: btoa(JSON.stringify(leaderboard, null, 2)), // base64 encode
-                            sha: sha
-                        })
+                        body: JSON.stringify(leaderboard)
                     }
                 );
                 
-                if (!updateResponse.ok) {
-                    const error = await updateResponse.json();
-                    console.log('GitHub save failed:', error.message);
+                if (!response.ok) {
+                    const error = await response.json();
+                    console.log('JSONBin save failed:', error);
                 } else {
-                    console.log('✓ Leaderboard saved to GitHub');
+                    console.log('✓ Leaderboard saved to JSONBin');
                 }
             } catch (e) {
-                console.log('GitHub save error (localStorage backup active):', e.message);
+                console.log('JSONBin save error:', e.message);
             }
         }
 
