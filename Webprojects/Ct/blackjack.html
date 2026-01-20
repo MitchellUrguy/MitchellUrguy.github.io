@@ -761,8 +761,8 @@
 
         // GitHub Repository Leaderboard - reads/writes directly to your repo
         const GITHUB_REPO = 'MitchellUrguy/MitchellUrguy.github.io'; // your-username/repo-name
-        const LEADERBOARD_FILE = 'Webprojects/Ct/leaderboard.json'; // file location in repo
-        const GITHUB_TOKEN = localStorage.getItem('githubToken') || 'your-github-token-here'; // Get from https://github.com/settings/tokens
+        const LEADERBOARD_FILE = 'leaderboard.json'; // file location in repo
+        const GITHUB_TOKEN = 'your-github-token-here'; // Get from https://github.com/settings/tokens
         
         async function loadLeaderboard() {
             let cloudData = [];
