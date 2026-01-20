@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Blackjack Casino</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Georgia', serif;
+            overflow: hidden;
+            background: #000;
+        }
+
+        #loadingScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1a0a00 0%, #3d1a00 50%, #1a0a00 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            transition: opacity 0.5s;
+        }
+
+        #loadingScreen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .casino-logo {
+            font-size: 72px;
+            color: #ffd700;
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+            margin-bottom: 30px;
+            font-weight: bold;
+            letter-spacing: 5px;
+        }
+
+        .loading-text {
+            color: #fff;
+            font-size: 24px;
+            margin-bottom: 20px;
+            letter-spacing: 2px;
+        }
+
+        .loading-bar-container {
+            width: 300px;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .loading-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #ffd700, #ffed4e, #ffd700);
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        #gameCanvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        #gameUI {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        #chipDisplay {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 20px 30px;
+            border-radius: 15px;
+            border: 2px solid #ffd700;
+            color: #fff;
+            pointer-events: auto;
+        }
+
+        .chip-amount {
+            font-size: 32px;
+            color: #ffd700;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .chip-label {
+            font-size: 16px;
+            color: #ccc;
+        }
+
+        .hand-value {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px 20px;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 24px;
+            font-weight: bold;
+            border: 2px solid #ffd700;
+        }
+
+        #playerValue {
+            bottom: 180px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        #dealerValue {
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        #bettingUI {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            pointer-events: auto;
+        }
+
+        .chip-button {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 4px solid #fff;
+            cursor: pointer;
+            font-size: 20px;
+            font-weight: bold;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+        }
+
+        .chip-button:hover {
+            transform: translateY(-5px) scale(1.05);
+        }
+
+        .chip-5 { background: radial-gradient(circle, #ff4444, #cc0000); }
+        .chip-25 { background: radial-gradient(circle, #44ff44, #00cc00); }
+        .chip-100 { background: radial-gradient(circle, #4444ff, #0000cc); }
+        .chip-500 { background: radial-gradient(circle, #ff44ff, #cc00cc); }
+        .chip-allin { background: radial-gradient(circle, #ffd700, #ffaa00); font-size: 16px; }
+
+        #actionButtons {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            pointer-events: auto;
+        }
+
+        .action-button {
+            padding: 15px 40px;
+            font-size: 20px;
+            font-weight: bold;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .action-button:hover {
+            transform: translateY(-3px);
+        }
+
+        .action-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-deal { background: linear-gradient(135deg, #2ecc71, #27ae60); color: white; }
+        .btn-hit { background: linear-gradient(135deg, #3498db, #2980b9); color: white; }
+        .btn-stand { background: linear-gradient(135deg, #e74c3c, #c0392b); color: white; }
+        .btn-double { background: linear-gradient(135deg, #f39c12, #d68910); color: white; }
+
+        #currentBet {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px 20px;
+            border-radius: 10px;
+            border: 2px solid #ffd700;
+            color: #fff;
+            font-size: 16px;
+        }
+
+        .bet-amount {
+            color: #ffd700;
+            font-weight: bold;
+            font-size: 24px;
+        }
+
+        #messageDisplay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            padding: 30px 60px;
+            border-radius: 20px;
+            border: 3px solid #ffd700;
+            color: #fff;
+            font-size: 36px;
+            font-weight: bold;
+            text-align: center;
+            display: none;
+            pointer-events: none;
+        }
+
+        #messageDisplay.show {
+            display: block;
+            animation: messagePopup 0.3s ease-out;
+        }
+
+        @keyframes messagePopup {
+            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+
+        .win-message { color: #2ecc71; }
+        .lose-message { color: #e74c3c; }
+        .push-message { color: #f39c12; }
+
+        #nameInput {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            border-radius: 10px;
+            border: 2px solid #ffd700;
+            color: #fff;
+            pointer-events: auto;
+        }
+
+        #nameInput input {
+            margin-left: 10px;
+            padding: 5px;
+            border: none;
+            border-radius: 5px;
+        }
+
+        #nameInput button {
+            margin-left: 10px;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 5px;
+            background: #ffd700;
+            color: #000;
+            cursor: pointer;
+        }
+
+        #leaderboardUI {
+            display: none;
+            position: absolute;
+            top: 100px;
+            right: 30px;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #ffd700;
+            color: #fff;
+            max-width: 300px;
+            max-height: 400px;
+            overflow-y: auto;
+            pointer-events: auto;
+        }
+
+        #leaderboardUI h2 {
+            margin: 0 0 15px 0;
+            color: #ffd700;
+            text-align: center;
+        }
+
+        #leaderboardList {
+            list-style: none;
+            padding: 0;
+        }
+
+        #leaderboardList li {
+            padding: 8px;
+            margin: 5px 0;
+            background: rgba(255, 215, 0, 0.1);
+            border-radius: 5px;
+        }
+
+        .setup-notice {
+            background: rgba(255, 100, 100, 0.2);
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-size: 12px;
+            border: 1px solid #ff6464;
+        }
+    </style>
+</head>
+<body>
+    <div id="loadingScreen">
+        <div class="casino-logo">♠ BLACKJACK ♥</div>
+        <div class="loading-text">Loading Casino...</div>
+        <div class="loading-bar-container">
+            <div class="loading-bar" id="loadingBar"></div>
+        </div>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="gameUI">
+        <div id="chipDisplay">
+            <div class="chip-amount">$<span id="chipAmount">1000</span></div>
+            <div class="chip-label">YOUR CHIPS</div>
+        </div>
+
+        <div id="nameInput">
+            <label for="playerName">Name:</label>
+            <input id="playerName" placeholder="Enter your name" value="Player">
+            <button onclick="toggleLeaderboard()">Leaderboard</button>
+        </div>
+
+        <div id="leaderboardUI">
+            <h2>🏆 Leaderboard</h2>
+            <div id="setupNotice" class="setup-notice" style="display: none;">
+                ⚠️ Setup required: Add your GitHub token in the code to enable syncing
+            </div>
+            <ol id="leaderboardList"></ol>
+        </div>
+
+        <div id="playerValue" class="hand-value" style="display: none;">
+            Player: <span id="playerValueText">0</span>
+        </div>
+        <div id="dealerValue" class="hand-value" style="display: none;">
+            Dealer: <span id="dealerValueText">0</span>
+        </div>
+
+        <div id="currentBet" style="display: none;">
+            Current Bet: $<span class="bet-amount" id="betAmount">0</span>
+        </div>
+
+        <div id="bettingUI">
+            <div class="chip-button chip-5" onclick="placeBet(5)">$5</div>
+            <div class="chip-button chip-25" onclick="placeBet(25)">$25</div>
+            <div class="chip-button chip-100" onclick="placeBet(100)">$100</div>
+            <div class="chip-button chip-500" onclick="placeBet(500)">$500</div>
+            <div class="chip-button chip-allin" onclick="placeBet(playerChips)">ALL IN</div>
+        </div>
+
+        <div id="actionButtons">
+            <button class="action-button btn-deal" id="dealBtn" onclick="dealCards()">Deal</button>
+            <button class="action-button btn-hit" id="hitBtn" onclick="hit()" style="display: none;">Hit</button>
+            <button class="action-button btn-stand" id="standBtn" onclick="stand()" style="display: none;">Stand</button>
+            <button class="action-button btn-double" id="doubleBtn" onclick="doubleDown()" style="display: none;">Double Down</button>
+        </div>
+
+        <div id="messageDisplay"></div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // ========================================
+        // SETUP: Add your GitHub credentials here
+        // ========================================
+        const GITHUB_TOKEN = ''; // Your GitHub Personal Access Token
+        const GIST_ID = '';      // Your Gist ID (will be auto-created if empty)
+        
+        // Game Variables
+        let scene, camera, renderer;
+        let table, cards = [];
+        let deck = [];
+        let playerHand = [];
+        let dealerHand = [];
+        let playerChips = 1000;
+        let currentBet = 0;
+        let gameState = 'betting';
+        let dealerHiddenCard = null;
+        let canDouble = false;
+        let betChips = [];
+        let chipGeometry;
+        let playerName = 'Player';
+        let maxChips = 1000;
+        let leaderboard = [];
+
+        const playerCardStart = { x: -2, y: 0.91, z: 2 };
+        const dealerCardStart = { x: -2, y: 0.91, z: -2 };
+        const cardSpacing = 0.8;
+
+        // ========================================
+        // LEADERBOARD SYSTEM - GitHub Gist
+        // ========================================
+        
+        async function loadLeaderboard() {
+            if (!GITHUB_TOKEN) {
+                console.log('GitHub token not set - using local storage only');
+                document.getElementById('setupNotice').style.display = 'block';
+                leaderboard = JSON.parse(localStorage.getItem('blackjackLeaderboard') || '[]');
+                displayLeaderboard();
+                return;
+            }
+
+            console.log('Token length:', GITHUB_TOKEN.length);
+            console.log('Token starts with:', GITHUB_TOKEN.substring(0, 4));
+            console.log('Gist ID:', GIST_ID);
+
+            try {
+                let gistId = GIST_ID || localStorage.getItem('blackjackGistId');
+                
+                if (gistId) {
+                    console.log('Attempting to load gist:', gistId);
+                    // Load existing gist
+                    const response = await fetch(`https://api.github.com/gists/${gistId}`, {
+                        headers: {
+                            'Authorization': `token ${GITHUB_TOKEN}`,
+                            'Accept': 'application/vnd.github.v3+json'
+                        }
+                    });
+                    
+                    console.log('Response status:', response.status);
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        const content = data.files['blackjack-leaderboard.json'].content;
+                        leaderboard = JSON.parse(content);
+                        console.log('✓ Leaderboard loaded from GitHub Gist');
+                    } else {
+                        const errorData = await response.json();
+                        console.error('GitHub API Error:', errorData);
+                        alert(`GitHub Error: ${errorData.message}\n\nCheck:\n1. Token is valid\n2. Token has "gist" permission\n3. Gist ID is correct\n\nUsing local storage instead.`);
+                        leaderboard = JSON.parse(localStorage.getItem('blackjackLeaderboard') || '[]');
+                    }
+                } else {
+                    console.log('Creating new gist...');
+                    // Create new gist
+                    const response = await fetch('https://api.github.com/gists', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `token ${GITHUB_TOKEN}`,
+                            'Accept': 'application/vnd.github.v3+json'
+                        },
+                        body: JSON.stringify({
+                            description: 'Blackjack Game Leaderboard',
+                            public: false,
+                            files: {
+                                'blackjack-leaderboard.json': {
+                                    content: '[]'
+                                }
+                            }
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        localStorage.setItem('blackjackGistId', data.id);
+                        console.log('✓ New Gist created:', data.id);
+                        console.log('Add this to your code: const GIST_ID = "' + data.id + '";');
+                        alert(`Gist created! Add this to your code:\n\nconst GIST_ID = '${data.id}';`);
+                    } else {
+                        const errorData = await response.json();
+                        console.error('Failed to create gist:', errorData);
+                        alert(`Cannot create gist: ${errorData.message}\n\nYour token may be invalid. Please create a new token with "gist" permission.`);
+                    }
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                leaderboard = JSON.parse(localStorage.getItem('blackjackLeaderboard') || '[]');
+            }
+            
+            displayLeaderboard();
+        }
+
+        async function saveLeaderboard() {
+            // Always save locally
+            localStorage.setItem('blackjackLeaderboard', JSON.stringify(leaderboard));
+            
+            if (!GITHUB_TOKEN) return;
+            
+            try {
+                const gistId = GIST_ID || localStorage.getItem('blackjackGistId');
+                if (!gistId) return;
+                
+                await fetch(`https://api.github.com/gists/${gistId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `token ${GITHUB_TOKEN}`,
+                        'Accept': 'application/vnd.github.v3+json'
+                    },
+                    body: JSON.stringify({
+                        files: {
+                            'blackjack-leaderboard.json': {
+                                content: JSON.stringify(leaderboard, null, 2)
+                            }
+                        }
+                    })
+                });
+                console.log('✓ Leaderboard saved to GitHub Gist');
+            } catch (error) {
+                console.log('Save error:', error.message);
+            }
+        }
+
+        function updateLeaderboard(name, score) {
+            const existing = leaderboard.find(e => e.name === name);
+            if (!existing) {
+                leaderboard.push({ name, score, date: new Date().toISOString() });
+            } else {
+                existing.score = Math.max(existing.score, score);
+                existing.date = new Date().toISOString();
+            }
+            leaderboard.sort((a, b) => b.score - a.score);
+            leaderboard = leaderboard.slice(0, 10);
+            
+            saveLeaderboard();
+            displayLeaderboard();
+        }
+
+        function displayLeaderboard() {
+            const list = document.getElementById('leaderboardList');
+            list.innerHTML = '';
+            
+            if (leaderboard.length === 0) {
+                list.innerHTML = '<li style="text-align: center; color: #999;">No scores yet</li>';
+                return;
+            }
+            
+            leaderboard.forEach((entry, index) => {
+                const li = document.createElement('li');
+                const medal = index === 0 ? '🥇 ' : index === 1 ? '🥈 ' : index === 2 ? '🥉 ' : `${index + 1}. `;
+                li.textContent = `${medal}${entry.name}: $${entry.score}`;
+                list.appendChild(li);
+            });
+        }
+
+        function toggleLeaderboard() {
+            const ui = document.getElementById('leaderboardUI');
+            ui.style.display = ui.style.display === 'none' ? 'block' : 'none';
+        }
+
+        // ========================================
+        // GAME INITIALIZATION
+        // ========================================
+
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x1a0a00);
+
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 8, 8);
+            camera.lookAt(0, 0, 0);
+
+            renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('gameCanvas'), antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+            scene.add(ambientLight);
+
+            const spotLight = new THREE.SpotLight(0xffffff, 0.8);
+            spotLight.position.set(0, 10, 0);
+            spotLight.castShadow = true;
+            scene.add(spotLight);
+
+            createTable();
+            initializeDeck();
+            animate();
+            simulateLoading();
+            loadLeaderboard();
+            
+            document.getElementById('playerName').addEventListener('input', (e) => {
+                playerName = e.target.value || 'Player';
+            });
+        }
+
+        function createTable() {
+            const tableGeometry = new THREE.CylinderGeometry(5, 5, 0.3, 32);
+            const tableMaterial = new THREE.MeshStandardMaterial({ color: 0x0d5c0d, roughness: 0.8 });
+            table = new THREE.Mesh(tableGeometry, tableMaterial);
+            table.position.y = 0.75;
+            table.receiveShadow = true;
+            scene.add(table);
+
+            const edgeGeometry = new THREE.CylinderGeometry(5.2, 5.2, 0.5, 32);
+            const edgeMaterial = new THREE.MeshStandardMaterial({ color: 0x4a2511, roughness: 0.6 });
+            const edge = new THREE.Mesh(edgeGeometry, edgeMaterial);
+            edge.position.y = 0.5;
+            scene.add(edge);
+
+            const baseGeometry = new THREE.CylinderGeometry(1, 1.5, 3, 16);
+            const baseMaterial = new THREE.MeshStandardMaterial({ color: 0x2d1810 });
+            const base = new THREE.Mesh(baseGeometry, baseMaterial);
+            base.position.y = -1.5;
+            scene.add(base);
+
+            const circleGeometry = new THREE.RingGeometry(0.8, 1, 32);
+            const circleMaterial = new THREE.MeshBasicMaterial({ color: 0xffd700, side: THREE.DoubleSide, transparent: true, opacity: 0.6 });
+            const circle = new THREE.Mesh(circleGeometry, circleMaterial);
+            circle.rotation.x = -Math.PI / 2;
+            circle.position.set(0, 0.91, 2);
+            scene.add(circle);
+
+            createText('DEALER', 0, 0.92, -3);
+
+            chipGeometry = new THREE.CylinderGeometry(0.3, 0.3, 0.05, 16);
+
+            const floorGeometry = new THREE.PlaneGeometry(50, 50);
+            const floorMaterial = new THREE.MeshStandardMaterial({ color: 0x1a0505 });
+            const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+            floor.rotation.x = -Math.PI / 2;
+            floor.position.y = -3;
+            scene.add(floor);
+        }
+
+        function createText(text, x, y, z) {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = 512;
+            canvas.height = 128;
+            context.fillStyle = '#ffd700';
+            context.font = 'bold 60px Georgia';
+            context.textAlign = 'center';
+            context.fillText(text, 256, 80);
+            const texture = new THREE.CanvasTexture(canvas);
+            const material = new THREE.MeshBasicMaterial({ map: texture, transparent: true });
+            const geometry = new THREE.PlaneGeometry(2, 0.5);
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.rotation.x = -Math.PI / 2;
+            mesh.position.set(x, y, z);
+            scene.add(mesh);
+        }
+
+        function initializeDeck() {
+            const suits = ['♠', '♥', '♦', '♣'];
+            const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+            deck = [];
+            for (let suit of suits) {
+                for (let value of values) {
+                    deck.push({ suit, value });
+                }
+            }
+            shuffleDeck();
+        }
+
+        function shuffleDeck() {
+            for (let i = deck.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [deck[i], deck[j]] = [deck[j], deck[i]];
+            }
+        }
+
+        function createCard(cardData, x, y, z, faceDown = false) {
+            const group = new THREE.Group();
+            const cardGeometry = new THREE.BoxGeometry(0.6, 0.01, 0.9);
+            const cardMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff });
+            const card = new THREE.Mesh(cardGeometry, cardMaterial);
+            card.castShadow = true;
+            group.add(card);
+
+            if (!faceDown) {
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.width = 256;
+                canvas.height = 384;
+                context.fillStyle = '#ffffff';
+                context.fillRect(0, 0, 256, 384);
+                const isRed = cardData.suit === '♥' || cardData.suit === '♦';
+                context.fillStyle = isRed ? '#ff0000' : '#000000';
+                context.font = 'bold 60px Georgia';
+                context.fillText(cardData.value, 20, 70);
+                context.font = 'bold 80px Georgia';
+                context.fillText(cardData.suit, 20, 160);
+                const texture = new THREE.CanvasTexture(canvas);
+                const faceMaterial = new THREE.MeshBasicMaterial({ map: texture });
+                const faceGeometry = new THREE.PlaneGeometry(0.59, 0.89);
+                const face = new THREE.Mesh(faceGeometry, faceMaterial);
+                face.rotation.x = -Math.PI / 2;
+                face.position.y = 0.006;
+                group.add(face);
+            } else {
+                const backCanvas = document.createElement('canvas');
+                const backContext = backCanvas.getContext('2d');
+                backCanvas.width = 256;
+                backCanvas.height = 384;
+                backContext.fillStyle = '#0d47a1';
+                backContext.fillRect(0, 0, 256, 384);
+                backContext.strokeStyle = '#ffffff';
+                backContext.lineWidth = 4;
+                backContext.strokeRect(10, 10, 236, 364);
+                const backTexture = new THREE.CanvasTexture(backCanvas);
+                const backMaterial = new THREE.MeshBasicMaterial({ map: backTexture });
+                const backGeometry = new THREE.PlaneGeometry(0.59, 0.89);
+                const back = new THREE.Mesh(backGeometry, backMaterial);
+                back.rotation.x = -Math.PI / 2;
+                back.position.y = 0.006;
+                group.add(back);
+            }
+
+            group.position.set(x, y, z);
+            group.userData = { cardData, faceDown };
+            scene.add(group);
+            cards.push(group);
+            return group;
+        }
+
+        function createChip(amount) {
+            let color;
+            switch(amount) {
+                case 5: color = 0xff4444; break;
+                case 25: color = 0x44ff44; break;
+                case 100: color = 0x4444ff; break;
+                case 500: color = 0xff44ff; break;
+                default: color = 0xffd700;
+            }
+            const material = new THREE.MeshStandardMaterial({ color });
+            const chip = new THREE.Mesh(chipGeometry, material);
+            chip.position.set(0, 0.92 + betChips.length * 0.06, 2);
+            chip.castShadow = true;
+            scene.add(chip);
+            betChips.push(chip);
+        }
+
+        function animateCard(card, startX, startY, startZ, endX, endY, endZ, duration = 500) {
+            const startTime = Date.now();
+            const animate = () => {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                card.position.set(
+                    startX + (endX - startX) * progress,
+                    startY + (endY - startY) * progress,
+                    startZ + (endZ - startZ) * progress
+                );
+                if (progress < 1) requestAnimationFrame(animate);
+            };
+            animate();
+        }
+
+        // ========================================
+        // GAME LOGIC
+        // ========================================
+
+        function getCardValue(card) {
+            if (card.value === 'A') return 11;
+            if (['K', 'Q', 'J'].includes(card.value)) return 10;
+            return parseInt(card.value);
+        }
+
+        function calculateHandValue(hand) {
+            let value = 0;
+            let aces = 0;
+            for (let card of hand) {
+                value += getCardValue(card);
+                if (card.value === 'A') aces++;
+            }
+            while (value > 21 && aces > 0) {
+                value -= 10;
+                aces--;
+            }
+            return value;
+        }
+
+        function placeBet(amount) {
+            if (gameState !== 'betting') return;
+            if (playerChips < amount) {
+                showMessage('Not enough chips!', 'lose');
+                return;
+            }
+            
+            document.querySelectorAll('.chip-button').forEach(btn => btn.style.pointerEvents = 'none');
+            
+            currentBet += amount;
+            playerChips -= amount;
+            updateUI();
+            
+            document.getElementById('currentBet').style.display = 'block';
+            createChip(amount);
+        }
+
+        function dealCards() {
+            if (currentBet === 0) {
+                showMessage('Place a bet first!', 'lose');
+                return;
+            }
+            
+            if (deck.length < 20) initializeDeck();
+            
+            gameState = 'playing';
+            playerHand = [];
+            dealerHand = [];
+            
+            for (let card of cards) scene.remove(card);
+            cards = [];
+            
+            setTimeout(() => {
+                const card1 = deck.pop();
+                playerHand.push(card1);
+                const cardMesh1 = createCard(card1, 0, 1, -3);
+                animateCard(cardMesh1, 0, 1, -3, playerCardStart.x, playerCardStart.y, playerCardStart.z);
+            }, 200);
+            
+            setTimeout(() => {
+                const card2 = deck.pop();
+                dealerHand.push(card2);
+                const cardMesh2 = createCard(card2, 0, 1, -3);
+                animateCard(cardMesh2, 0, 1, -3, dealerCardStart.x, dealerCardStart.y, dealerCardStart.z);
+            }, 400);
+            
+            setTimeout(() => {
+                const card3 = deck.pop();
+                playerHand.push(card3);
+                const cardMesh3 = createCard(card3, 0, 1, -3);
+                animateCard(cardMesh3, 0, 1, -3, playerCardStart.x + cardSpacing, playerCardStart.y, playerCardStart.z);
+            }, 600);
+            
+            setTimeout(() => {
+                const card4 = deck.pop();
+                dealerHand.push(card4);
+                dealerHiddenCard = createCard(card4, 0, 1, -3, true);
+                animateCard(dealerHiddenCard, 0, 1, -3, dealerCardStart.x + cardSpacing, dealerCardStart.y, dealerCardStart.z);
+                
+                updateUI();
+                showActionButtons();
+                checkBlackjack();
+            }, 800);
+        }
+
+        function hit() {
+            const newCard = deck.pop();
+            playerHand.push(newCard);
+            
+            const cardX = playerCardStart.x + (playerHand.length - 1) * cardSpacing;
+            const cardMesh = createCard(newCard, 0, 1, -3);
+            animateCard(cardMesh, 0, 1, -3, cardX, playerCardStart.y, playerCardStart.z);
+            
+            canDouble = false;
+            updateUI();
+            
+            const playerValue = calculateHandValue(playerHand);
+            if (playerValue > 21) {
+                endGame('bust');
+            } else {
+                document.getElementById('doubleBtn').style.display = 'none';
+            }
+        }
+
+        function stand() {
+            gameState = 'dealer';
+            hideActionButtons();
+            
+            if (dealerHiddenCard) {
+                scene.remove(dealerHiddenCard);
+                const cardData = dealerHiddenCard.userData.cardData;
+                createCard(cardData, dealerCardStart.x + cardSpacing, dealerCardStart.y, dealerCardStart.z);
+            }
+            
+            updateUI();
+            setTimeout(() => dealerPlay(), 1000);
+        }
+
+        function doubleDown() {
+            if (playerChips < currentBet) {
+                showMessage('Not enough chips to double!', 'lose');
+                return;
+            }
+            
+            playerChips -= currentBet;
+            currentBet *= 2;
+            updateUI();
+            
+            const newCard = deck.pop();
+            playerHand.push(newCard);
+            const cardX = playerCardStart.x + (playerHand.length - 1) * cardSpacing;
+            const cardMesh = createCard(newCard, 0, 1, -3);
+            animateCard(cardMesh, 0, 1, -3, cardX, playerCardStart.y, playerCardStart.z);
+            
+            updateUI();
+            
+            const playerValue = calculateHandValue(playerHand);
+            if (playerValue > 21) {
+                setTimeout(() => endGame('bust'), 500);
+            } else {
+                setTimeout(() => stand(), 500);
+            }
+        }
+
+        function dealerPlay() {
+            let dealerValue = calculateHandValue(dealerHand);
+            
+            if (dealerValue < 17) {
+                setTimeout(() => {
+                    const newCard = deck.pop();
+                    dealerHand.push(newCard);
+                    const cardX = dealerCardStart.x + (dealerHand.length - 1) * cardSpacing;
+                    const cardMesh = createCard(newCard, 0, 1, -3);
+                    animateCard(cardMesh, 0, 1, -3, cardX, dealerCardStart.y, dealerCardStart.z);
+                    updateUI();
+                    dealerPlay();
+                }, 1000);
+            } else {
+                setTimeout(() => determineWinner(), 500);
+            }
+        }
+
+        function checkBlackjack() {
+            const playerValue = calculateHandValue(playerHand);
+            
+            if (playerValue === 21) {
+                const dealerValue = calculateHandValue(dealerHand);
+                if (dealerValue === 21) {
+                    endGame('push');
+                } else {
+                    endGame('blackjack');
+                }
+            } else {
+                canDouble = playerHand.length === 2;
+                if (canDouble) {
+                    document.getElementById('doubleBtn').style.display = 'block';
+                }
+            }
+        }
+
+        function determineWinner() {
+            const playerValue = calculateHandValue(playerHand);
+            const dealerValue = calculateHandValue(dealerHand);
+            
+            if (dealerValue > 21) {
+                endGame('win');
+            } else if (playerValue > dealerValue) {
+                endGame('win');
+            } else if (dealerValue > playerValue) {
+                endGame('lose');
+            } else {
+                endGame('push');
+            }
+        }
+
+        function endGame(result) {
+            gameState = 'ended';
+            hideActionButtons();
+            
+            let message = '';
+            let messageClass = '';
+            
+            switch(result) {
+                case 'blackjack':
+                    playerChips += currentBet * 2.5;
+                    message = 'BLACKJACK! You win!';
+                    messageClass = 'win';
+                    break;
+                case 'win':
+                    playerChips += currentBet * 2;
+                    message = 'YOU WIN!';
+                    messageClass = 'win';
+                    break;
+                case 'lose':
+                    message = 'DEALER WINS!';
+                    messageClass = 'lose';
+                    break;
+                case 'bust':
+                    message = 'BUST! You lose!';
+                    messageClass = 'lose';
+                    break;
+                case 'push':
+                    playerChips += currentBet;
+                    message = 'PUSH!';
+                    messageClass = 'push';
+                    break;
+            }
+            
+            showMessage(message, messageClass);
+            setTimeout(() => finishGame(), 2500);
+        }
+
+        function finishGame() {
+            currentBet = 0;
+            gameState = 'betting';
+            
+            for (let chip of betChips) scene.remove(chip);
+            betChips = [];
+            
+            for (let card of cards) scene.remove(card);
+            cards = [];
+            
+            maxChips = Math.max(maxChips, playerChips);
+            
+            setTimeout(() => {
+                updateUI();
+                document.getElementById('dealBtn').style.display = 'block';
+                document.getElementById('currentBet').style.display = 'none';
+                document.querySelectorAll('.chip-button').forEach(btn => btn.style.pointerEvents = 'auto');
+                
+                if (playerChips <= 0) {
+                    showMessage('Game Over!', 'lose');
+                    updateLeaderboard(playerName, maxChips);
+                    setTimeout(() => {
+                        if (confirm(`Game Over! Your high score: ${maxChips}\n\nPlay again?`)) {
+                            location.reload();
+                        }
+                    }, 2500);
+                }
+            }, 3000);
+        }
+
+        function showActionButtons() {
+            document.getElementById('dealBtn').style.display = 'none';
+            document.getElementById('hitBtn').style.display = 'block';
+            document.getElementById('standBtn').style.display = 'block';
+        }
+
+        function hideActionButtons() {
+            document.getElementById('hitBtn').style.display = 'none';
+            document.getElementById('standBtn').style.display = 'none';
+            document.getElementById('doubleBtn').style.display = 'none';
+        }
+
+        function updateUI() {
+            document.getElementById('chipAmount').textContent = playerChips;
+            document.getElementById('betAmount').textContent = currentBet;
+            
+            if (playerHand.length > 0) {
+                const playerValue = calculateHandValue(playerHand);
+                document.getElementById('playerValueText').textContent = playerValue;
+                document.getElementById('playerValue').style.display = 'block';
+            } else {
+                document.getElementById('playerValue').style.display = 'none';
+            }
+            
+            if (dealerHand.length > 0 && gameState !== 'playing') {
+                const dealerValue = calculateHandValue(dealerHand);
+                document.getElementById('dealerValueText').textContent = dealerValue;
+                document.getElementById('dealerValue').style.display = 'block';
+            } else if (dealerHand.length > 0 && gameState === 'playing') {
+                const firstCardValue = getCardValue(dealerHand[0]);
+                document.getElementById('dealerValueText').textContent = firstCardValue;
+                document.getElementById('dealerValue').style.display = 'block';
+            } else {
+                document.getElementById('dealerValue').style.display = 'none';
+            }
+        }
+
+        function showMessage(message, type) {
+            const messageEl = document.getElementById('messageDisplay');
+            messageEl.textContent = message;
+            messageEl.className = 'show ' + type + '-message';
+            
+            setTimeout(() => {
+                messageEl.classList.remove('show');
+            }, 2500);
+        }
+
+        function simulateLoading() {
+            let progress = 0;
+            const loadingBar = document.getElementById('loadingBar');
+            const loadingScreen = document.getElementById('loadingScreen');
+            
+            const interval = setInterval(() => {
+                progress += Math.random() * 15;
+                if (progress >= 100) {
+                    progress = 100;
+                    loadingBar.style.width = '100%';
+                    setTimeout(() => {
+                        loadingScreen.classList.add('hidden');
+                        setTimeout(() => {
+                            loadingScreen.style.display = 'none';
+                        }, 500);
+                    }, 300);
+                    clearInterval(interval);
+                } else {
+                    loadingBar.style.width = progress + '%';
+                }
+            }, 100);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const time = Date.now() * 0.0001;
+            camera.position.x = Math.sin(time) * 0.3;
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        init();
+    </script>
+</body>
+</html>
