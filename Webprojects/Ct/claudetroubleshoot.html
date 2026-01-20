@@ -349,9 +349,6 @@
 
         <div id="leaderboardUI">
             <h2>🏆 Leaderboard</h2>
-            <div id="setupNotice" class="setup-notice" style="display: none;">
-                ⚠️ Setup required: Add your GitHub token in the code to enable syncing
-            </div>
             <ol id="leaderboardList"></ol>
         </div>
 
@@ -389,8 +386,8 @@
         // ========================================
         // SETUP: Add your GitHub credentials here
         // ========================================
-        const GITHUB_TOKEN = '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'; // Your GitHub Personal Access Token
-        const GIST_ID = '9c301e09dca140727f613d7c4546011d';      // Your Gist ID (will be auto-created if empty)
+        const GITHUB_TOKEN = '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'; // Paste your GitHub token here (with ad blocker OFF)
+        const GIST_ID = '9c301e09dca140727f613d7c4546011d'; // Your Gist ID
         
         // Game Variables
         let scene, camera, renderer;
@@ -420,76 +417,30 @@
         async function loadLeaderboard() {
             if (!GITHUB_TOKEN) {
                 console.log('GitHub token not set - using local storage only');
-                document.getElementById('setupNotice').style.display = 'block';
                 leaderboard = JSON.parse(localStorage.getItem('blackjackLeaderboard') || '[]');
                 displayLeaderboard();
                 return;
             }
 
-            console.log('Token length:', GITHUB_TOKEN.length);
-            console.log('Token starts with:', GITHUB_TOKEN.substring(0, 4));
-            console.log('Gist ID:', GIST_ID);
-
             try {
-                let gistId = GIST_ID || localStorage.getItem('blackjackGistId');
+                const response = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+                    headers: {
+                        'Authorization': `token ${GITHUB_TOKEN}`,
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+                });
                 
-                if (gistId) {
-                    console.log('Attempting to load gist:', gistId);
-                    // Load existing gist
-                    const response = await fetch(`https://api.github.com/gists/${gistId}`, {
-                        headers: {
-                            'Authorization': `token ${GITHUB_TOKEN}`,
-                            'Accept': 'application/vnd.github.v3+json'
-                        }
-                    });
-                    
-                    console.log('Response status:', response.status);
-                    
-                    if (response.ok) {
-                        const data = await response.json();
-                        const content = data.files['blackjack-leaderboard.json'].content;
-                        leaderboard = JSON.parse(content);
-                        console.log('✓ Leaderboard loaded from GitHub Gist');
-                    } else {
-                        const errorData = await response.json();
-                        console.error('GitHub API Error:', errorData);
-                        alert(`GitHub Error: ${errorData.message}\n\nCheck:\n1. Token is valid\n2. Token has "gist" permission\n3. Gist ID is correct\n\nUsing local storage instead.`);
-                        leaderboard = JSON.parse(localStorage.getItem('blackjackLeaderboard') || '[]');
-                    }
+                if (response.ok) {
+                    const data = await response.json();
+                    const content = data.files['blackjack-leaderboard.json'].content;
+                    leaderboard = JSON.parse(content);
+                    console.log('✓ Leaderboard loaded from GitHub Gist');
                 } else {
-                    console.log('Creating new gist...');
-                    // Create new gist
-                    const response = await fetch('https://api.github.com/gists', {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `token ${GITHUB_TOKEN}`,
-                            'Accept': 'application/vnd.github.v3+json'
-                        },
-                        body: JSON.stringify({
-                            description: 'Blackjack Game Leaderboard',
-                            public: false,
-                            files: {
-                                'blackjack-leaderboard.json': {
-                                    content: '[]'
-                                }
-                            }
-                        })
-                    });
-                    
-                    if (response.ok) {
-                        const data = await response.json();
-                        localStorage.setItem('blackjackGistId', data.id);
-                        console.log('✓ New Gist created:', data.id);
-                        console.log('Add this to your code: const GIST_ID = "' + data.id + '";');
-                        alert(`Gist created! Add this to your code:\n\nconst GIST_ID = '${data.id}';`);
-                    } else {
-                        const errorData = await response.json();
-                        console.error('Failed to create gist:', errorData);
-                        alert(`Cannot create gist: ${errorData.message}\n\nYour token may be invalid. Please create a new token with "gist" permission.`);
-                    }
+                    console.log('Could not load from GitHub, using local storage');
+                    leaderboard = JSON.parse(localStorage.getItem('blackjackLeaderboard') || '[]');
                 }
             } catch (error) {
-                console.error('Error:', error);
+                console.log('Error loading from GitHub:', error.message);
                 leaderboard = JSON.parse(localStorage.getItem('blackjackLeaderboard') || '[]');
             }
             
@@ -497,20 +448,17 @@
         }
 
         async function saveLeaderboard() {
-            // Always save locally
             localStorage.setItem('blackjackLeaderboard', JSON.stringify(leaderboard));
             
             if (!GITHUB_TOKEN) return;
             
             try {
-                const gistId = GIST_ID || localStorage.getItem('blackjackGistId');
-                if (!gistId) return;
-                
-                await fetch(`https://api.github.com/gists/${gistId}`, {
+                const response = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
                     method: 'PATCH',
                     headers: {
                         'Authorization': `token ${GITHUB_TOKEN}`,
-                        'Accept': 'application/vnd.github.v3+json'
+                        'Accept': 'application/vnd.github.v3+json',
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
                         files: {
@@ -520,9 +468,14 @@
                         }
                     })
                 });
-                console.log('✓ Leaderboard saved to GitHub Gist');
+                
+                if (response.ok) {
+                    console.log('✓ Leaderboard saved to GitHub Gist');
+                } else {
+                    console.log('Could not save to GitHub');
+                }
             } catch (error) {
-                console.log('Save error:', error.message);
+                console.log('Error saving to GitHub:', error.message);
             }
         }
 
