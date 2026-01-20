@@ -807,7 +807,7 @@
         }
 
         async function saveToGitHub() {
-            if (GITHUB_TOKEN === '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') {
+            if (GITHUB_TOKEN === 'your-github-token-here') {
                 console.log('GitHub token not set. Scores will be saved locally only.');
                 return;
             }
@@ -915,6 +915,9 @@
                 return;
             }
            
+            // Disable betting buttons once bet is placed
+            document.querySelectorAll('.chip-button').forEach(btn => btn.style.pointerEvents = 'none');
+            
             currentBet += amount;
             playerChips -= amount;
             updateUI();
@@ -1223,6 +1226,9 @@
                 updateUI();
                 document.getElementById('dealBtn').style.display = 'block';
                 document.getElementById('currentBet').style.display = 'none';
+                
+                // Re-enable betting buttons for next round
+                document.querySelectorAll('.chip-button').forEach(btn => btn.style.pointerEvents = 'auto');
                
                 if (playerChips <= 0) {
                     showMessage('Game Over!', 'lose');
