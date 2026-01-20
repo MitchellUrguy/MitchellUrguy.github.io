@@ -271,7 +271,7 @@
         #currentBet {
             position: absolute;
             bottom: 30px;
-            right: 200px;
+            left: 30px;
             background: rgba(0, 0, 0, 0.8);
             padding: 10px 20px;
             border-radius: 10px;
@@ -785,21 +785,10 @@
                 console.log('Could not load from GitHub repo');
             }
             
-            let localData = [];
-            try {
-                const saved = localStorage.getItem('blackjackLeaderboard');
-                if (saved) localData = JSON.parse(saved);
-            } catch (e) {}
+            // Use only GitHub data, clear any local storage data
+            localStorage.removeItem('blackjackLeaderboard');
             
-            // Merge and keep top 10
-            const merged = {};
-            [...(cloudData || []), ...localData].forEach(item => {
-                if (item.name && (!merged[item.name] || item.score > merged[item.name].score)) {
-                    merged[item.name] = item;
-                }
-            });
-            
-            leaderboard = Object.values(merged).sort((a, b) => b.score - a.score).slice(0, 10);
+            leaderboard = (cloudData || []).sort((a, b) => b.score - a.score).slice(0, 10);
             displayLeaderboard();
         }
 
@@ -813,7 +802,6 @@
             leaderboard.sort((a, b) => b.score - a.score);
             leaderboard = leaderboard.slice(0, 10);
             
-            localStorage.setItem('blackjackLeaderboard', JSON.stringify(leaderboard));
             saveToGitHub();
             displayLeaderboard();
         }
